@@ -1,109 +1,149 @@
 # Defines a deterministic autoencoder using TensorFlow/Keras to
 # compress and reconstruct images from the MNIST dataset.
 
-import numpy as np#  type: ignore
 import matplotlib.pyplot as plt#  type: ignore
-from tensorflow import keras #  type: ignore
-from tensorflow.keras import layers#  type: ignore
-from tensorflow.keras.datasets import mnist   # type: ignore
-from sklearn.decomposition import PCA  # type: ignore
-from sklearn.preprocessing import StandardScaler # type:ignore#  type: ignore
+import numpy as np#  type: ignore
 import pandas as pd#  type: ignore
-import os#  type: ignore
-from typing import Tuple
+from tensorflow import keras #  type: ignore
+from tensorflow.keras import layers #  type: ignore
+from tensorflow.keras.datasets import mnist   # type: ignore
+from typing import Tuple, List, cast
+
 
 class DeterministicAutoencoder(object):
-    def __init__(self):
-        pass
-# Define autoencoder architecture
-encoding_dim = 16
-print(f"Compression factor is {784/encoding_dim}")
+    def __init__(self, encode_dims: List[int]):
+        """Initializes the deterministic autoencoder.
 
-# Input layer
-input_img = keras.Input(shape=(784,))
+        Args:
+            encode_dims (List[int]): _description_
+        """
+        self.encode_dims = encode_dims
+        self.num_hidden_layers = len(encode_dims) - 1
+        self.compression_factor = self.encode_dims[0] / self.encode_dims[-1]
+        self.autoencoder, self.encoder, self.decoder = self._build()
+        self.history = None # Filled in by fit() method
 
-# Encoder
-encoded = layers.Dense(128, activation='relu')(input_img)
-encoded = layers.Dense(64, activation='relu')(encoded)
-encoded = layers.Dense(encoding_dim, activation='relu')(encoded)
+    def _build(self) -> Tuple[keras.Model, keras.Model, keras.Model]:
+        """Builds the autoencoder, encoder, and decoder models.
 
-# Decoder
-decoded = layers.Dense(64, activation='relu')(encoded)
-decoded = layers.Dense(128, activation='relu')(decoded)
-decoded = layers.Dense(784, activation='sigmoid')(decoded)
+        Returns:
+            Tuple[keras.Model, keras.Model, keras.Model]: The autoencoder, encoder, and decoder models.
+        """
+        # Input layer
+        input_img = keras.Input(shape=(self.encode_dims[0],))
+        # Encoder
+        encoded = None
+        for idx, dim in enumerate(self.encode_dims[:-1]):
+            if idx == 0:
+                encoded = layers.Dense(self.encode_dims[1], activation='relu')(input_img) # type: ignore
+            else:
+                encoded = layers.Dense(encode_dims[idx+1], activation='relu')(encoded) # type: ignore
+        # Decoder
+        decode_dims = list(self.encode_dims)
+        decode_dims.reverse()
+        decoded = None
+        for idx, dim in enumerate(decode_dims):
+            if idx == 0:
+                decoded = layers.Dense(decode_dims[1], activation='relu')(encoded) # type: ignore
+            else:
+                decoded = layers.Dense(decode_dims[idx+1], activation='relu')(decoded) # type: ignore
+        # Create the autoencoder model
+        autoencoder = keras.Model(input_img, decoded)
+        # Create encoder model (for extracting encoded representations)
+        encoder = keras.Model(input_img, encoded)
+        # Create the decoder model
+        encoded_input = keras.Input(shape=(self.encode_dims[-1],))
+        layers = []
+        for idim in range(self.num_hidden_layers, 1, -1):
+            layers.append(self.autoencoder.layers[-idim])
+        decoder_layer = layers[-1](encoded_input)
+        for ilayer in range(1, self.num_hidden_layers):
+            decoder_layer = layers[ilayer](decoder_layer)
+        # Create decoder model
+        decoder = keras.Model(encoded_input, decoder_layer)
+        # Compile the autoencoder
+        autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
+        return autoencoder, encoder, decoder
 
-# Create the autoencoder model
-autoencoder = keras.Model(input_img, decoded)
+    def summarizeModel(self) -> None:
+        self.autoencoder.summary()
 
-# Create encoder model (for extracting encoded representations)
-encoder = keras.Model(input_img, encoded)
+    def fit(self, 
+            X_train: np.ndarray,
+            y_train: np.ndarray,
+            epochs: int,
+            batch_size: int,
+            validation_data: Tuple[np.ndarray, np.ndarray],
+            verbose: int=1) -> None:
+        """Trains the autoencoder.
+        Args:
+            X_train (np.ndarray): Training data
+            y_train (np.ndarray): Training labels
+            epochs (int): Number of training epochs
+            batch_size (int): Size of training batches
+        """
+        self.history = self.autoencoder.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, shuffle=True,
+                validation_data=validation_data, verbose=verbose)
+        
+    def plot(self) -> None:
+        keras.utils.plot_model(self.autoencoder, show_shapes=True, to_file='autoencoder.png') # type: ignore
 
-# Create decoder model
-encoded_input = keras.Input(shape=(encoding_dim,))
-decoder_layer1 = autoencoder.layers[-3]
-decoder_layer2 = autoencoder.layers[-2]
-decoder_layer3 = autoencoder.layers[-1]
-decoder = keras.Model(encoded_input,
-                     decoder_layer3(decoder_layer2(decoder_layer1(encoded_input))))
 
-# Compile the autoencoder
-autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
+        # Plot training history
+        plt.figure(figsize=(12, 4))
 
-# Display model architecture
-autoencoder.summary()
+        plt.subplot(1, 2, 1)
+        plt.plot(self.history.history['loss'], label='Training Loss')
+        plt.plot(self.history.history['val_loss'], label='Validation Loss')
+        plt.title('Model Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
 
-# Train the autoencoder
-history = autoencoder.fit(X_TRAIN, X_TRAIN,
-                         epochs=15,
-                         batch_size=256,
-                         shuffle=True,
-                         validation_data=(X_TEST, X_TEST),
-                         verbose=1)
+        # Generate predictions
+        encoded_imgs = self.encoder.predict(X_TEST)
+        decoded_imgs = self.autoencoder.predict(X_TEST)
 
-# Plot training history
-plt.figure(figsize=(12, 4))
+        # Visualize results
+        plt.subplot(1, 2, 2)
+        n = 10  # Number of images to display
+        plt.figure(figsize=(20, 4))
 
-plt.subplot(1, 2, 1)
-plt.plot(history.history['loss'], label='Training Loss')
-plt.plot(history.history['val_loss'], label='Validation Loss')
-plt.title('Model Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend()
+        for i in range(n):
+            # Original images
+            ax = plt.subplot(2, n, i + 1)
+            plt.imshow(X_TEST[i].reshape(28, 28), cmap='gray')
+            plt.title("Original")
+            plt.axis('off')
 
-# Generate predictions
-encoded_imgs = encoder.predict(X_TEST)
-decoded_imgs = autoencoder.predict(X_TEST)
+            # Reconstructed images
+            ax = plt.subplot(2, n, i + 1 + n)
+            plt.imshow(decoded_imgs[i].reshape(28, 28), cmap='gray')
+            plt.title("Reconstructed")
+            plt.axis('off')
 
-# Visualize results
-plt.subplot(1, 2, 2)
-n = 10  # Number of images to display
-plt.figure(figsize=(20, 4))
+        plt.tight_layout()
+        plt.show()
 
-for i in range(n):
-    # Original images
-    ax = plt.subplot(2, n, i + 1)
-    plt.imshow(X_TEST[i].reshape(28, 28), cmap='gray')
-    plt.title("Original")
-    plt.axis('off')
+        # Print compression statistics
+        print(f"\nOriginal image size: 784 pixels")
+        print(f"Encoded representation size: {encoding_dim} values")
+        print(f"Compression ratio: {784/encoding_dim:.1f}:1")
+        print(f"Final training loss: {history.history['loss'][-1]:.4f}")
+        print(f"Final validation loss: {history.history['val_loss'][-1]:.4f}")
 
-    # Reconstructed images
-    ax = plt.subplot(2, n, i + 1 + n)
-    plt.imshow(decoded_imgs[i].reshape(28, 28), cmap='gray')
-    plt.title("Reconstructed")
-    plt.axis('off')
+    def serialize(self, path: str) -> None:
+        """Serializes the model
 
-plt.tight_layout()
-plt.show()
+        Args:
+            path (str): Path to save the model.
 
-# Print compression statistics
-print(f"\nOriginal image size: 784 pixels")
-print(f"Encoded representation size: {encoding_dim} values")
-print(f"Compression ratio: {784/encoding_dim:.1f}:1")
-print(f"Final training loss: {history.history['loss'][-1]:.4f}")
-print(f"Final validation loss: {history.history['val_loss'][-1]:.4f}")
-
-# Optional: Save the trained model
-# autoencoder.save('mnist_autoencoder.h5')
-# encoder.save('mnist_encoder.h5')
-# decoder.save('mnist_decoder.h5')
+        """
+        data = {
+            'encode_dims': [self.encode_dims],
+            'num_hidden_layers': [self.num_hidden_layers],
+            'compression_factor': [self.compression_factor]
+        }
+        self.autoencoder.save(path)
+        # encoder.save('mnist_encoder.h5')
+        # decoder.save('mnist_decoder.h5')

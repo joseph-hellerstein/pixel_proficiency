@@ -1,0 +1,45 @@
+import src.constants as cn
+import numpy as np
+import os
+from typing import Tuple
+
+def getMNISTData(prefix: str) -> np.ndarray:
+    """Recovers MNIST image data from the specified prefix.
+
+    Args:
+        prefix (str): The prefix to filter image files.
+
+    Returns:
+        np.ndarray: The recovered image data.
+    """
+    num_row = cn.NUM_TRAIN if prefix == 'train' else cn.NUM_TEST
+    ffiles = [f for f in os.listdir(cn.DATA_DIR) if prefix in f]
+    full_arr = np.zeros((num_row, 28, 28))
+    for ffile in ffiles:
+        extract = ffile.split("_")[1]
+        irow = int(extract.split(".")[0])
+        path = os.path.join(cn.DATA_DIR, ffile)
+        arr = np.loadtxt(path, delimiter=',').astype(int)
+        full_arr[irow] = arr
+    return full_arr.astype('int64')
+
+def getProcessedMNISTData() -> Tuple[np.ndarray, np.ndarray]:
+    """Recovers processed MNIST image data from the specified prefix.
+
+    Args:
+        prefix (str): The prefix to filter processed image files.
+
+    Returns:
+        np.ndarray: training data
+        np.ndarray: test data
+    """
+    # Recover the data
+    x_train = getMNISTData('train')
+    x_test = getMNISTData('test')
+    # Flatten the images (28x28 -> 784)
+    x_train = x_train.reshape((len(x_train), 28 * 28))
+    x_test = x_test.reshape((len(x_test), 28 * 28))
+    # Normalize pixel values to [0, 1] range
+    x_train = x_train.astype('float32') / 255.0
+    x_test = x_test.astype('float32') / 255.0
+    return x_train, x_test
