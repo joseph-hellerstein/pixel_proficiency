@@ -13,6 +13,8 @@ DATA_FILE_TRAIN = os.path.join(cn.TEST_DIR, "dae_train.csv")
 DATA_FILE_TEST = os.path.join(cn.TEST_DIR, "dae_test.csv")
 if not os.path.exists(DATA_FILE_TRAIN) or not os.path.exists(DATA_FILE_TEST):
     X_TRAIN, X_TEST = util.getMNISTData('train'), util.getMNISTData('test')
+    X_TRAIN = X_TRAIN.astype('float32')
+    X_TEST = X_TEST.astype('float32')
     np.savetxt(DATA_FILE_TRAIN, np.reshape(X_TRAIN, (np.shape(X_TRAIN)[0], 28*28)), delimiter=',')
     np.savetxt(DATA_FILE_TEST, np.reshape(X_TEST, (np.shape(X_TEST)[0], 28*28)), delimiter=',')
 else:
@@ -61,9 +63,9 @@ class TestDeterministicAutoencoder(unittest.TestCase):
     def testFit(self):
         #if IGNORE_TEST:
         #    return
-        encode_dims = [784, 128, 64, 16]
+        encode_dims = [784, 128, 64, 8]
         dae = DeterministicAutoencoder(encode_dims)
-        dae.fit(X_TRAIN, num_epoch=15, batch_size=256, validation_data=X_TEST, verbose=1)
+        dae.fit(X_TRAIN, num_epoch=10, batch_size=256, validation_data=X_TEST, verbose=1)
         dae.summarizeModel()
         dae.plot(X_TEST)
         self.assertIsNotNone(dae.history)

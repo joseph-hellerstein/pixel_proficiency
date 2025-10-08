@@ -13,6 +13,8 @@ from tensorflow import keras #  type: ignore
 from tensorflow.keras.datasets import mnist   # type: ignore
 from typing import Tuple, List, Any
 
+NORMALIZATION_FACTOR = 255.0
+
 
 class DeterministicAutoencoder(object):
     def __init__(self, encode_dims: List[int]):
@@ -75,7 +77,7 @@ class DeterministicAutoencoder(object):
     def summarizeModel(self) -> None:
         self.autoencoder.summary()
 
-    def _flatten(self, arr: np.ndarray) -> np.ndarray:
+    def _flatten(self, arr: np.ndarray, normalization_factor: float=NORMALIZATION_FACTOR) -> np.ndarray:
         """Flattens the input images and normalizes pixel values to [0, 1].
         Args:
             x (np.ndarray): Input images (not flattened)
@@ -86,7 +88,7 @@ class DeterministicAutoencoder(object):
         self.image_shape = np.shape(arr[0])
         size = np.prod(self.image_shape)
         num_image = np.shape(arr)[0]
-        x_flat = arr.reshape(num_image, size)/255.0
+        x_flat = arr.reshape(num_image, size).astype('float32')/normalization_factor
         return x_flat
     
     def _unflatten(self, arr: np.ndarray, mult_factor: float=1.0) -> np.ndarray:
@@ -100,8 +102,8 @@ class DeterministicAutoencoder(object):
         result_shape = np.zeros(len(self.image_shape) + 1)
         result_shape[0] = np.shape(arr)[0]
         result_shape[1:] = self.image_shape
-        result = np.reshape(arr, result_shape.astype(int))*mult_factor
-        return result
+        result = np.reshape(arr, result_shape.astype(int))
+        return result.astype('float32')*mult_factor
 
     def fit(self, 
             x_train: np.ndarray,
@@ -143,7 +145,6 @@ class DeterministicAutoencoder(object):
         x_predict = self.autoencoder.predict(x_flatten)
         x_plot = self._unflatten(x_predict)
         # Visualize results
-        plt.subplot(1, 2, 2)
         num_display = 10  # Number of images to display
         plt.figure(figsize=(20, 4))
 
