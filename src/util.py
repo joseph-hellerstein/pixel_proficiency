@@ -23,6 +23,18 @@ def getMNISTData(prefix: str) -> np.ndarray:
         full_arr[irow] = arr
     return full_arr.astype('int64')
 
+def getMNISTTTData() -> Tuple[np.ndarray, np.ndarray]:
+    """Recovers MNIST image data for training and testing.
+
+    Returns:
+        np.ndarray: training data
+        np.ndarray: test data
+    """
+    # Recover the data
+    x_train = getMNISTData('train').astype('float32')/255.0
+    x_test = getMNISTData('test').astype('float32')/255.0
+    return x_train, x_test
+
 def getProcessedMNISTData() -> Tuple[np.ndarray, np.ndarray]:
     """Recovers processed MNIST image data from the specified prefix.
 
@@ -34,12 +46,8 @@ def getProcessedMNISTData() -> Tuple[np.ndarray, np.ndarray]:
         np.ndarray: test data
     """
     # Recover the data
-    x_train = getMNISTData('train')
-    x_test = getMNISTData('test')
+    x_train, x_test = getMNISTTTData()
     # Flatten the images (28x28 -> 784)
     x_train = x_train.reshape((len(x_train), 28 * 28))
     x_test = x_test.reshape((len(x_test), 28 * 28))
-    # Normalize pixel values to [0, 1] range
-    x_train = x_train.astype('float32') / 255.0
-    x_test = x_test.astype('float32') / 255.0
     return x_train, x_test
