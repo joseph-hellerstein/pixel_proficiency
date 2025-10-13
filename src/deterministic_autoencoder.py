@@ -129,17 +129,15 @@ class DeterministicAutoencoder(object):
         Args:
             x_test (np.ndarray): array of test images (not flattened)
         """
-        if False:
-            # Plot training history
-            plt.figure(figsize=(12, 4))
-            plt.subplot(1, 2, 1)
-            plt.plot(self.history.history['loss'], label='Training Loss')
-            plt.plot(self.history.history['val_loss'], label='Validation Loss')
-            plt.title('Model Loss')
-            plt.xlabel('Epoch')
-            plt.ylabel('Loss')
-            plt.legend()
-
+        """ # Plot training history
+        plt.figure(figsize=(12, 4))
+        plt.subplot(1, 2, 1)
+        plt.plot(self.history.history['loss'], label='Training Loss')
+        plt.plot(self.history.history['val_loss'], label='Validation Loss')
+        plt.title('Model Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()"""
         # Generate predictions
         x_flatten = self._flatten(x_test)
         x_predict = self.autoencoder.predict(x_flatten)
@@ -147,20 +145,17 @@ class DeterministicAutoencoder(object):
         # Visualize results
         num_display = 10  # Number of images to display
         plt.figure(figsize=(20, 4))
-
         for i in range(num_display):
             # Original images
             ax = plt.subplot(2, num_display, i + 1)
             ax.imshow(x_test[i], cmap='gray')
             ax.set_title("Original")
             plt.axis('off')
-
             # Reconstructed images
             ax = plt.subplot(2, num_display, i + 1 + num_display)
             ax.imshow(x_plot[i], cmap='gray')
             ax.set_title("Reconstructed")
             plt.axis('off')
-
         plt.tight_layout()
         plt.show()
 

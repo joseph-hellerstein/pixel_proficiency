@@ -1,6 +1,7 @@
 import src.constants as cn
 import numpy as np
 import os
+import pickle
 from typing import Tuple
 
 def getMNISTData(prefix: str) -> np.ndarray:
@@ -50,4 +51,46 @@ def getProcessedMNISTData() -> Tuple[np.ndarray, np.ndarray]:
     # Flatten the images (28x28 -> 784)
     x_train = x_train.reshape((len(x_train), 28 * 28))
     x_test = x_test.reshape((len(x_test), 28 * 28))
+    return x_train, x_test
+
+def pklMNIST(x_train: np.ndarray, x_test: np.ndarray) -> None:
+    """Saves the MNIST data as pickle files.
+
+    Args:
+        x_train (np.ndarray): training data
+        x_test (np.ndarray): test data
+    """
+    with open(cn.MNIST_TRAIN_PATH, 'wb') as f:
+        pickle.dump(x_train, f)
+    with open(cn.MNIST_TEST_PATH, 'wb') as f:
+        pickle.dump(x_test, f)
+
+def unpklMNIST() -> Tuple[np.ndarray, np.ndarray]:
+    """Recovers MNIST image data from pickle files.
+
+    Returns:
+        np.ndarray: training data
+        np.ndarray: test data
+    """
+    with open(cn.MNIST_TRAIN_PATH, 'rb') as f:
+        x_train = pickle.load(f)
+    with open(cn.MNIST_TEST_PATH, 'rb') as f:
+        x_test = pickle.load(f)
+    return x_train, x_test
+
+def getPklMNIST() -> Tuple[np.ndarray, np.ndarray]:
+    """Recovers MNIST image data from pickle files, or pickles the data if not present.
+
+    Returns:
+        np.ndarray: training data
+        np.ndarray: test data
+    """
+    if not os.path.exists(cn.MNIST_TRAIN_PATH)  \
+            or not os.path.exists(cn.MNIST_TEST_PATH):
+        print("***Pickling MNIST data...")
+        x_train, x_test = getMNISTTTData()
+        pklMNIST(x_train, x_test)
+    else:
+        print("***Unpickling MNIST data...")
+        x_train, x_test = unpklMNIST()
     return x_train, x_test

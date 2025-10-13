@@ -9,18 +9,17 @@ import os
 
 IGNORE_TEST = True
 IS_PLOT = False
-DATA_FILE_TRAIN = os.path.join(cn.TEST_DIR, "dae_train.csv")
-DATA_FILE_TEST = os.path.join(cn.TEST_DIR, "dae_test.csv")
-if not os.path.exists(DATA_FILE_TRAIN) or not os.path.exists(DATA_FILE_TEST):
+if not os.path.exists(cn.MNIST_TRAIN_PATH)  \
+        or not os.path.exists(cn.MNIST_TEST_PATH):
+    print("***Pickling MNIST data...")
     X_TRAIN, X_TEST = util.getMNISTData('train'), util.getMNISTData('test')
     X_TRAIN = X_TRAIN.astype('float32')
     X_TEST = X_TEST.astype('float32')
-    np.savetxt(DATA_FILE_TRAIN, np.reshape(X_TRAIN, (np.shape(X_TRAIN)[0], 28*28)), delimiter=',')
-    np.savetxt(DATA_FILE_TEST, np.reshape(X_TEST, (np.shape(X_TEST)[0], 28*28)), delimiter=',')
+    util.pklMNIST(X_TRAIN, X_TEST)
 else:
-    X_TRAIN = np.loadtxt(DATA_FILE_TRAIN, delimiter=',')
+    print("***Unpickling MNIST data...")
+    X_TRAIN, X_TEST = util.unpklMNIST()
     X_TRAIN = np.reshape(X_TRAIN, (np.shape(X_TRAIN)[0], 28, 28))
-    X_TEST = np.loadtxt(DATA_FILE_TEST, delimiter=',')
     X_TEST = np.reshape(X_TEST, (np.shape(X_TEST)[0], 28, 28))
 
 
@@ -60,7 +59,7 @@ class TestDeterministicAutoencoder(unittest.TestCase):
                 for k in range(28):
                     self.assertAlmostEqual(arr[i][j][k], unflat[i][j][k], places=5)
 
-    def testFit(self):
+    def testFitPlot(self):
         #if IGNORE_TEST:
         #    return
         encode_dims = [784, 128, 64, 8]
