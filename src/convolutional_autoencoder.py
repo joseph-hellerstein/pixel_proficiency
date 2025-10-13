@@ -92,19 +92,26 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         #
         return autoencoder, encoder, decoder, history_dct
     
-    def predict(self, image_arr: np.ndarray) -> np.ndarray:
+    def predict(self, image_arr: np.ndarray,
+                predictor_type: str = "autoencoder") -> np.ndarray:
         """Generates reconstructed images from the autoencoder.
 
         Args:
             image_arr (np.ndarray): array of images
+            predictor_type (str, optional):
+                Type of predictor to use: "autoencoder", "encoder", or "decoder".
+                Defaults to "autoencoder".
         Returns:
             np.ndarray: array of reconstructed images
         """
-        if len(image_arr.shape) == 3:
-            image_arr = np.expand_dims(image_arr, -1)
-        if image_arr.shape[1:] != tuple(self.image_shape):
-            raise ValueError(f"Input image shape {image_arr.shape[1:]} does not match model image shape {self.image_shape}")
-        reconstructed = self.autoencoder.predict(image_arr)
+        if predictor_type in ["autoencoder", "encoder"]:
+            if len(image_arr.shape) == 3:
+                image_arr = np.expand_dims(image_arr, -1)
+            if image_arr.shape[1:] != tuple(self.image_shape):
+                raise ValueError(f"Input image shape {image_arr.shape[1:]} != image shape {self.image_shape}")
+        elif image_arr[0].shape[0] != self.hidden_dims[-1]:
+            raise ValueError(f"Input encoded shape {image_arr[0].shape} != encoding shape {self.hidden_dims[-1]}")
+        reconstructed = super().predict(image_arr, predictor_type=predictor_type)
         return reconstructed
 
     @property

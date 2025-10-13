@@ -54,19 +54,33 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         cae2 = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 hidden_dims=self.encode_dims,
                 is_delete_serializations=False)
-        self.cae.plot(X_TEST)
+        cae2.plot(X_TEST)
         self.assertIsNotNone(cae2.autoencoder)
         self.assertIsNotNone(cae2.encoder)
         self.assertIsNotNone(cae2.decoder)
         self.assertTrue(len(cae2.history_dct) != 0)
 
-    def testDecoderEncoder(self):
+    def testEncoderDecoder1(self):
         #if IGNORE_TEST:
         #    return
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 hidden_dims=ENCODE_DIMS,
                 is_delete_serializations=False)
-        import pdb; pdb.set_trace()
-        cae.plot(X_TEST)
+        prediction_arr = cae.predict(X_TEST, predictor_type="encoder")
+        x_test = cae.predict(prediction_arr, predictor_type="decoder")
+        cae.plot(x_test)
+
+    def testDecoderEncoder(self):
+        if IGNORE_TEST:
+            return
+        cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
+                hidden_dims=ENCODE_DIMS,
+                is_delete_serializations=False)
+        autoencoder_prediction = cae.predict(X_TEST, predictor_type="autoencoder")
+        encoder_prediction = cae.predict(X_TEST, predictor_type="encoder")
+        decoder_prediction = cae.predict(encoder_prediction, predictor_type="decoder")
+        self.assertTrue(np.all(autoencoder_prediction.shape == X_TEST.shape))
+        self.assertTrue(np.all(encoder_prediction.shape[1] == cae.hidden_dims[-1]))
+        self.assertTrue(np.all(decoder_prediction.shape == X_TEST.shape))
 if __name__ == '__main__':
     unittest.main()

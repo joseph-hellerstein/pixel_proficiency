@@ -78,15 +78,26 @@ class AbstractAutoencoder(object):
         # Prints a summary of the autoencoder model.
         self.autoencoder.summary()
     
-    def predict(self, image_arr: np.ndarray) -> np.ndarray:
+    def predict(self, image_arr: np.ndarray,
+            predictor_type: str = "autoencoder") -> np.ndarray:
         """Generates reconstructed images from the autoencoder.
 
         Args:
-            image_arr (np.ndarray): array of images
+            image_arr (np.ndarray): array of images structured as expected by the model
+            predictor_type (str, optional):
+                Type of predictor to use: "autoencoder", "encoder", or "decoder".
+                Defaults to "autoencoder".
         Returns:
             np.ndarray: array of reconstructed images
         """
-        raise NotImplementedError("Subclasses must implement predict method")
+        if predictor_type == "autoencoder":
+            return self.autoencoder.predict(image_arr)
+        elif predictor_type == "encoder":
+            return self.encoder.predict(image_arr)
+        elif predictor_type == "decoder":
+            return self.decoder.predict(image_arr)
+        else:
+            raise ValueError(f"Unknown predictor type: {predictor_type}")
 
     def plot(self, x_test: np.ndarray) -> None:
         """Plots the training history and the reconstructed images.
