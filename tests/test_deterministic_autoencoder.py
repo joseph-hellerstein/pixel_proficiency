@@ -9,18 +9,9 @@ import os
 
 IGNORE_TEST = True
 IS_PLOT = False
-if not os.path.exists(cn.MNIST_TRAIN_PATH)  \
-        or not os.path.exists(cn.MNIST_TEST_PATH):
-    print("***Pickling MNIST data...")
-    X_TRAIN, X_TEST = util.getMNISTData('train'), util.getMNISTData('test')
-    X_TRAIN = X_TRAIN.astype('float32')
-    X_TEST = X_TEST.astype('float32')
-    util.pklMNIST(X_TRAIN, X_TEST)
-else:
-    print("***Unpickling MNIST data...")
-    X_TRAIN, X_TEST = util.unpklMNIST()
-    X_TRAIN = np.reshape(X_TRAIN, (np.shape(X_TRAIN)[0], 28, 28))
-    X_TEST = np.reshape(X_TEST, (np.shape(X_TEST)[0], 28, 28))
+X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST = util.getPklMNIST()
+X_TRAIN = np.reshape(X_TRAIN, (np.shape(X_TRAIN)[0], 28, 28))
+X_TEST = np.reshape(X_TEST, (np.shape(X_TEST)[0], 28, 28))
 
 
 #############################

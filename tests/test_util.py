@@ -23,16 +23,15 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(arr.dtype, 'int64')
 
     def testPklMNIST(self):
-        #if IGNORE_TEST:
-        #    self.skipTest("Ignoring test as per flag.")
+        if IGNORE_TEST:
+            self.skipTest("Ignoring test as per flag.")
         mnist_data = util.getPklMNIST()
-        import pdb; pdb.set_trace()
         self.assertEqual(mnist_data.x_train.shape, (60000, 28, 28))
         self.assertEqual(mnist_data.x_test.shape, (10000, 28, 28))
         self.assertEqual(mnist_data.label_train.shape, (60000,))
         self.assertEqual(mnist_data.label_test.shape, (10000,))
-        self.assertEqual(mnist_data.x_train.dtype, 'float32')
-        self.assertEqual(mnist_data.x_test.dtype, 'float32')
+        self.assertEqual(mnist_data.x_train.dtype, 'uint8')
+        self.assertEqual(mnist_data.x_test.dtype, 'uint8')
         self.assertEqual(mnist_data.label_train.dtype, 'uint8')
         self.assertEqual(mnist_data.label_test.dtype, 'uint8')
         

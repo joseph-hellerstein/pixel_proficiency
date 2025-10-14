@@ -11,7 +11,7 @@ IS_PLOT = False
 IMAGE_SHAPE = [28,28,1]
 ENCODE_DIMS = [128, 64, 2]
 # Prepare the data
-X_TRAIN, X_TEST = util.getPklMNIST()
+X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST = util.getPklMNIST()
 # Reshape to add channel dimension (28, 28, 1) for CNN
 X_TRAIN = np.expand_dims(X_TRAIN, -1)
 X_TEST = np.expand_dims(X_TEST, -1)
