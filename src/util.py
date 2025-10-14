@@ -1,8 +1,10 @@
 import src.constants as cn
+from collections import namedtuple
 import numpy as np
 import os
 import pickle
 from typing import Tuple
+from tensorflow.keras.datasets import mnist  # type: ignore
 
 def getMNISTData(prefix: str) -> np.ndarray:
     """Recovers MNIST image data from the specified prefix.
@@ -60,10 +62,10 @@ def pklMNIST(x_train: np.ndarray, x_test: np.ndarray) -> None:
         x_train (np.ndarray): training data
         x_test (np.ndarray): test data
     """
-    with open(cn.MNIST_TRAIN_PATH, 'wb') as f:
+    """ with open(cn.MNIST_TRAIN_PATH, 'wb') as f:
         pickle.dump(x_train, f)
     with open(cn.MNIST_TEST_PATH, 'wb') as f:
-        pickle.dump(x_test, f)
+        pickle.dump(x_test, f) """
 
 def unpklMNIST() -> Tuple[np.ndarray, np.ndarray]:
     """Recovers MNIST image data from pickle files.
@@ -78,19 +80,21 @@ def unpklMNIST() -> Tuple[np.ndarray, np.ndarray]:
         x_test = pickle.load(f)
     return x_train, x_test
 
-def getPklMNIST() -> Tuple[np.ndarray, np.ndarray]:
+MNISTData = namedtuple('MNISTData', ['x_train', 'label_train', 'x_test', 'label_test'])
+def getPklMNIST() -> MNISTData:
     """Recovers MNIST image data from pickle files, or pickles the data if not present.
 
     Returns:
-        np.ndarray: training data
-        np.ndarray: test data
+        MNISTData: A named tuple containing training and test data and labels.
     """
-    if not os.path.exists(cn.MNIST_TRAIN_PATH)  \
-            or not os.path.exists(cn.MNIST_TEST_PATH):
+    if not os.path.exists(cn.MNIST_PATH):
         print("***Pickling MNIST data...")
-        x_train, x_test = getMNISTTTData()
-        pklMNIST(x_train, x_test)
+        (x_train, label_train), (x_test, label_test) = mnist.load_data()
+        data = (x_train, label_train, x_test, label_test)
+        with open(cn.MNIST_PATH, 'wb') as f:
+            pickle.dump(data, f)
     else:
         print("***Unpickling MNIST data...")
-        x_train, x_test = unpklMNIST()
-    return x_train, x_test
+        with open(cn.MNIST_PATH, 'rb') as f:
+            x_train, label_train, x_test, label_test = pickle.load(f)
+    return MNISTData(x_train, label_train, x_test, label_test)

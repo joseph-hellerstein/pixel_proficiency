@@ -3,6 +3,7 @@
 import collections
 import json
 import matplotlib.pyplot as plt#  type: ignore
+from matplotlib import cm #  type: ignore
 import numpy as np#  type: ignore
 import os
 import pandas as pd#  type: ignore
@@ -225,3 +226,25 @@ class AbstractAutoencoder(object):
         decoder = cls.deserializeModel(decoder_path)
         history_dct = cls.deserializeHistory(history_path)
         return cls.DeserializeResult(autoencoder, encoder, decoder, history_dct)
+    
+    def plotEncodedDigits(self, x_test: np.ndarray) -> None:
+        """Plots the encoded digits in 2D space.
+
+        Args:
+            x_test (np.ndarray): array of test images
+        """
+        #colors = cm.viridis(np.linspace(0, 1, len(original_df.columns)))
+        if self.encoder.output_shape[1] != 2:
+            raise ValueError("Encoder output dimension is not 2.")
+        # Generate encoded representations
+        encoded_imgs = self.encoder.predict(x_test)
+        # Create a scatter plot of the encoded representations
+        plt.figure(figsize=(8, 6))
+        scatter = plt.scatter(encoded_imgs[:, 0], encoded_imgs[:, 1],
+                c=np.argmax(x_test, axis=1), cmap=cm.get_cmap('tab10', 10))
+        plt.colorbar(scatter, ticks=range(10))
+        plt.title('Encoded Digits in 2D Space')
+        plt.xlabel('Encoded Dimension 1')
+        plt.ylabel('Encoded Dimension 2')
+        plt.grid(True)
+        plt.show()

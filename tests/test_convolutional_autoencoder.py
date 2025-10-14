@@ -16,7 +16,6 @@ X_TRAIN, X_TEST = util.getPklMNIST()
 X_TRAIN = np.expand_dims(X_TRAIN, -1)
 X_TEST = np.expand_dims(X_TEST, -1)
 
-# FIXME: Test encoder, decoder
 # FIXME: Plot digits in 2 space
 
 
