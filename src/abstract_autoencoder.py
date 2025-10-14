@@ -99,26 +99,31 @@ class AbstractAutoencoder(object):
         else:
             raise ValueError(f"Unknown predictor type: {predictor_type}")
 
-    def plot(self, x_test: np.ndarray) -> None:
+    def plot(self, x_original_arr: np.ndarray,
+            x_predicted_arr: Optional[np.ndarray]=None) -> None:
         """Plots the training history and the reconstructed images.
 
         Args:
-            x_test (np.ndarray): array of test images
+            x_original_arr (np.ndarray): array of test images
+            x_predicted_arr (np.ndarray, optional): array of predicted images.
+                                                    If None, predictions are generated from x_original_arr.
+                                                    Defaults to None.
         """
         # Generate predictions
-        x_plot = self.predict(x_test)
+        if x_predicted_arr is None:
+            x_predicted_arr = self.predict(x_original_arr)
         # Visualize results
         num_display = 10  # Number of images to display
         plt.figure(figsize=(20, 4))
         for i in range(num_display):
             # Original images
             ax = plt.subplot(2, num_display, i + 1)
-            ax.imshow(x_test[i], cmap='gray')
+            ax.imshow(x_original_arr[i], cmap='gray')
             ax.set_title("Original")
             plt.axis('off')
             # Reconstructed images
             ax = plt.subplot(2, num_display, i + 1 + num_display)
-            ax.imshow(x_plot[i], cmap='gray')
+            ax.imshow(x_predicted_arr[i], cmap='gray')
             ax.set_title("Reconstructed")
             plt.axis('off')
         plt.tight_layout()

@@ -68,7 +68,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
                 is_delete_serializations=False)
         prediction_arr = cae.predict(X_TEST, predictor_type="encoder")
         x_test = cae.predict(prediction_arr, predictor_type="decoder")
-        cae.plot(x_test)
+        cae.plot(x_original_arr=X_TEST, x_predicted_arr=x_test)
 
     def testDecoderEncoder(self):
         if IGNORE_TEST:

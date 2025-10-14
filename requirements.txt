@@ -1,8 +1,9 @@
-numpy
-matplotlib
-tensorflow
-torch
 jupyterlab
+matplotlib
+numpy
 pandas
 scikit-learn
+seaborn
+tensorflow
+torch
 torchvision
