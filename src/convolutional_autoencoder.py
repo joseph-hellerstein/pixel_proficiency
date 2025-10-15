@@ -12,14 +12,12 @@ from sklearn.preprocessing import StandardScaler # type:ignore
 import pandas as pd # type: ignore
 import os
 from typing import List, Tuple, Any
-from torchvision import datasets # type: ignore
-from tensorflow.keras.models import load_model # type: ignore
 
 
 BASE_PATH = os.path.join(cn.MODEL_DIR, "convolutional_autoencoder")
 
 # Prepare the data
-X_TRAIN, X_TEST = util.getPklMNIST()
+X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST = util.getPklMNIST()
 # Reshape to add channel dimension (28, 28, 1) for CNN
 X_TRAIN = np.expand_dims(X_TRAIN, -1)
 X_TEST = np.expand_dims(X_TEST, -1)

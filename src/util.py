@@ -5,6 +5,15 @@ import os
 import pickle
 from typing import Tuple
 from tensorflow.keras.datasets import mnist  # type: ignore
+from torchvision import datasets # type: ignore
+from typing import List
+
+TrainTestData = namedtuple('TrainTestData', ['x_train', 'label_train', 'x_test', 'label_test', 'class_names'])
+# x_train: np.ndarray (training data)
+# label_train: np.ndarray (training labels)
+# x_test: np.ndarray (test data)
+# label_test: np.ndarray (test labels)
+# class_names: List[str] (class names)
 
 def getMNISTData(prefix: str) -> np.ndarray:
     """Recovers MNIST image data from the specified prefix.
@@ -80,12 +89,11 @@ def unpklMNIST() -> Tuple[np.ndarray, np.ndarray]:
         x_test = pickle.load(f)
     return x_train, x_test
 
-MNISTData = namedtuple('MNISTData', ['x_train', 'label_train', 'x_test', 'label_test'])
-def getPklMNIST() -> MNISTData:
+def getPklMNIST() -> TrainTestData:
     """Recovers MNIST image data from pickle files, or pickles the data if not present.
 
     Returns:
-        MNISTData: A named tuple containing training and test data and labels.
+        TrainTestData: A named tuple containing training and test data and labels.
     """
     if not os.path.exists(cn.MNIST_PATH):
         print("***Pickling MNIST data...")
@@ -97,4 +105,38 @@ def getPklMNIST() -> MNISTData:
         print("***Unpickling MNIST data...")
         with open(cn.MNIST_PATH, 'rb') as f:
             x_train, label_train, x_test, label_test = pickle.load(f)
-    return MNISTData(x_train, label_train, x_test, label_test)
+    class_names = [str(i) for i in range(10)]
+    return TrainTestData(x_train, label_train, x_test, label_test, class_names)
+
+def getPklAnimals() -> TrainTestData:
+    """Recovers Animals image data from pickle files, or pickles the data if not present.
+
+    Returns:
+        TrainTestData: A named tuple containing training and test data and labels.
+    """
+    ##
+    data_dir = "/Users/jlheller/home/Technical/repos/pixel_proficiency/data/animals"
+    def getData(data_type: str) -> Tuple[np.ndarray, np.ndarray, List[str]]:
+        dataset = datasets.STL10(root=data_dir, split=data_type, download=True)
+        class_names = dataset.classes  # List of class names
+        images = []
+        labels = []
+        for img, label in dataset:
+            images.append(np.array(img))
+            labels.append(label)
+        images_array = np.stack(images)  # Shape: (N, 96, 96, 3)
+        labels_array = np.array(labels)  # Shape: (N,)
+        return images_array, labels_array, class_names
+    ##
+    if not os.path.exists(cn.ANIMALS_PATH):
+        print("***Pickling Animals data...")
+        train_image_arr, train_label_arr, class_names = getData('train')
+        test_image_arr, test_label_arr, class_names = getData('test')
+        data = (train_image_arr, train_label_arr, test_image_arr, test_label_arr, class_names)
+        with open(cn.ANIMALS_PATH, 'wb') as f:
+            pickle.dump(data, f)
+    else:
+        print("***Unpickling Animals data...")
+        with open(cn.ANIMALS_PATH, 'rb') as f:  # type: ignore
+            train_image_arr, train_label_arr, test_image_arr, test_label_arr, class_names = pickle.load(f)
+    return TrainTestData(train_image_arr, train_label_arr, test_image_arr, test_label_arr, class_names)

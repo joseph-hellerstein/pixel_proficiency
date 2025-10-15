@@ -3,12 +3,11 @@
 import collections
 import json
 import matplotlib.pyplot as plt#  type: ignore
-from matplotlib import cm #  type: ignore
+import matplotlib.cm as cm
 import numpy as np#  type: ignore
 import os
 import pandas as pd#  type: ignore
 from tensorflow import keras #  type: ignore
-from tensorflow.keras.datasets import mnist   # type: ignore
 from tensorflow.keras.models import load_model # type: ignore
 from typing import Tuple, List, Any, Union, Optional
 
@@ -227,24 +226,42 @@ class AbstractAutoencoder(object):
         history_dct = cls.deserializeHistory(history_path)
         return cls.DeserializeResult(autoencoder, encoder, decoder, history_dct)
     
-    def plotEncodedDigits(self, x_test: np.ndarray) -> None:
-        """Plots the encoded digits in 2D space.
+    def plotEncoded(self, x_test: np.ndarray, x_label: np.ndarray,
+            max_num_point: int= 100,
+            lim: Optional[List[float]] = None) -> None:
+        """Plots the encoded labels in 2D space. If the encoded
+        space has more than 2 dimensions, just uses the first two dimensions
 
         Args:
             x_test (np.ndarray): array of test images
+            x_label (np.ndarray): array of test labels
+            max_num_point (int, optional): Maximum number of points to plot. Defaults to 100.
         """
-        #colors = cm.viridis(np.linspace(0, 1, len(original_df.columns)))
-        if self.encoder.output_shape[1] != 2:
-            raise ValueError("Encoder output dimension is not 2.")
+        colors = cm.viridis(np.linspace(0, 1, np.max(x_label) + 1)) # type: ignore
+        labels = np.sort(np.unique(x_label))
+        if x_test.shape[0] > max_num_point:
+            perm_arr = np.random.permutation(x_test.shape[0])
+            perm_arr = perm_arr[0:max_num_point]
+        else:
+            perm_arr = np.arange(x_test.shape[0])
+        x_test = x_test[perm_arr]
+        x_label = x_label[perm_arr]
+        if self.encoder.output_shape[1] < 2:
+            raise ValueError(f"Encoder output dimension is {self.encoder.output_shape[1]} < 2.")
         # Generate encoded representations
-        encoded_imgs = self.encoder.predict(x_test)
+        encoded_arr = self.predict(x_test, predictor_type="encoder")
         # Create a scatter plot of the encoded representations
         plt.figure(figsize=(8, 6))
-        scatter = plt.scatter(encoded_imgs[:, 0], encoded_imgs[:, 1],
-                c=np.argmax(x_test, axis=1), cmap=cm.get_cmap('tab10', 10))
-        plt.colorbar(scatter, ticks=range(10))
+        for label in labels:
+            mask = (x_label == label)
+            plt.scatter(encoded_arr[mask, 0], encoded_arr[mask, 1], c=colors[label])
+        if lim is not None:
+            plt.ylim(lim)
+            plt.xlim(lim)
         plt.title('Encoded Digits in 2D Space')
         plt.xlabel('Encoded Dimension 1')
         plt.ylabel('Encoded Dimension 2')
         plt.grid(True)
+        str_labels = [str(l) for l in labels]
+        plt.legend(str_labels)
         plt.show()

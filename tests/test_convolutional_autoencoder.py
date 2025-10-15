@@ -60,8 +60,8 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.assertTrue(len(cae2.history_dct) != 0)
 
     def testEncoderDecoder1(self):
-        #if IGNORE_TEST:
-        #    return
+        if IGNORE_TEST:
+            return
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 hidden_dims=ENCODE_DIMS,
                 is_delete_serializations=False)
@@ -81,5 +81,13 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.assertTrue(np.all(autoencoder_prediction.shape == X_TEST.shape))
         self.assertTrue(np.all(encoder_prediction.shape[1] == cae.hidden_dims[-1]))
         self.assertTrue(np.all(decoder_prediction.shape == X_TEST.shape))
+
+    def testPlotEncodedLabels(self):
+        #if IGNORE_TEST or not IS_PLOT:
+        #    return
+        cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
+                hidden_dims=ENCODE_DIMS,
+                is_delete_serializations=False)
+        cae.plotEncoded(X_TEST, LABEL_TEST, max_num_point=300, lim=[-10, 500])
 if __name__ == '__main__':
     unittest.main()
