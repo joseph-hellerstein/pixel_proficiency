@@ -17,7 +17,7 @@ from typing import List, Tuple, Any
 BASE_PATH = os.path.join(cn.MODEL_DIR, "convolutional_autoencoder")
 
 # Prepare the data
-X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST = util.getPklMNIST()
+X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST, CLASS_NAMES = util.getPklMNIST()
 # Reshape to add channel dimension (28, 28, 1) for CNN
 X_TRAIN = np.expand_dims(X_TRAIN, -1)
 X_TEST = np.expand_dims(X_TEST, -1)
@@ -67,19 +67,52 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             print("Loading existing model and history...")
             return result.autoencoder, result.encoder, result.decoder, result.history_dct  # type: ignore
         # No existing model. Must build a new one.
-        input_img = keras.Input(shape=self.image_shape)  # e.g., (28, 28, 1)
+        input_img = keras.Input(shape=self.image_shape)
+        num_detector = max(self.num_detector, self.image_shape[-1])
+        """
         # Encoder
-        encoded = layers.Conv2D(self.num_detector, (3, 3), activation='relu', padding='same')(input_img)  # 28×28×num_detector
-        encoded = layers.Reshape((self.num_detector*self.image_size,))(encoded)
+        encoded = layers.Conv2D(num_detector, (3, 3), activation='relu', padding='same')(input_img)
+        encoded = layers.Reshape((num_detector*int(self.image_size/self.image_shape[-1]),))(encoded)
         encoded = layers.Dense(self.hidden_dims[0], activation='relu')(encoded)
         encoded = layers.Dense(self.hidden_dims[1], activation='relu')(encoded)
         encoded = layers.Dense(self.hidden_dims[2], activation='relu')(encoded)
         # Decoder
         decoded = layers.Dense(self.hidden_dims[1], activation='relu')(encoded)
         decoded = layers.Dense(self.hidden_dims[0], activation='relu')(decoded)
-        decoded = layers.Dense(self.image_size*self.num_detector, activation='relu')(decoded)
-        decoded = layers.Reshape((*self.image_shape[:-1], self.num_detector))(decoded)
-        decoded = layers.Conv2D(1, (3, 3), activation='relu', padding='same')(decoded)  # 28×28×1
+        decoded = layers.Dense(int(self.image_size*int(num_detector/self.image_shape[-1])), activation='relu')(decoded)
+        decoded = layers.Reshape((*self.image_shape[:-1], num_detector))(decoded)
+        decoded = layers.Conv2D(1, (3, 3), activation='relu', padding='same')(decoded)
+        #
+        encoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation='relu', padding='same')(input_img)  # 28×28×num_detector
+        encoded = layers.Reshape((self.image_size,))(encoded)
+        encoded = layers.Dense(self.hidden_dims[0], activation='relu')(encoded)
+        encoded = layers.Dense(self.hidden_dims[1], activation='relu')(encoded)
+        encoded = layers.Dense(self.hidden_dims[2], activation='relu')(encoded)
+        # Decoder
+        decoded = layers.Dense(self.hidden_dims[1], activation='relu')(encoded)
+        decoded = layers.Dense(self.hidden_dims[0], activation='relu')(decoded)
+        decoded = layers.Dense(self.image_size, activation='relu')(decoded)
+        decoded = layers.Reshape((self.image_shape))(decoded)
+        decoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation='relu', padding='same')(decoded)  # 28×28×1
+        """
+        #
+        # No existing model. Must build a new one.
+        input_img = keras.Input(shape=self.image_shape)  # e.g., (28, 28, 1)
+        spatial_size = self.image_shape[0] * self.image_shape[1]
+        # Encoder
+        encoded = layers.Conv2D(self.num_detector, (3, 3), activation='relu', padding='same')(input_img)  # 28×28×num_detector
+        encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)
+        encoded = layers.Reshape((self.num_detector*spatial_size//4,))(encoded)
+        encoded = layers.Dense(self.hidden_dims[0], activation='relu')(encoded)
+        encoded = layers.Dense(self.hidden_dims[1], activation='relu')(encoded)
+        encoded = layers.Dense(self.hidden_dims[2], activation='relu')(encoded)
+        # Decoder
+        decoded = layers.Dense(self.hidden_dims[1], activation='relu')(encoded)
+        decoded = layers.Dense(self.hidden_dims[0], activation='relu')(decoded)
+        decoded = layers.Dense(spatial_size*self.num_detector//4, activation='relu')(decoded)
+        decoded = layers.Reshape((self.image_shape[0]//2, self.image_shape[1]//2, self.num_detector))(decoded)
+        decoded = layers.Conv2DTranspose(2*self.num_detector, (3, 3), strides=(2, 2), activation='relu', padding='same')(decoded)
+        decoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation='relu', padding='same')(decoded)  # 28×28×1
         # Create and compile the models
         encoder = keras.Model(input_img, encoded, name="encoder")
         encoder.compile(optimizer='adam', loss='mse', metrics=['mae'])

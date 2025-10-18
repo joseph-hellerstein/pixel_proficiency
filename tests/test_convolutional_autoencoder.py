@@ -11,7 +11,8 @@ IS_PLOT = False
 IMAGE_SHAPE = [28,28,1]
 ENCODE_DIMS = [128, 64, 2]
 # Prepare the data
-X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST = util.getPklMNIST()
+X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST, CLASS_NAMES = util.getPklMNIST()
+X_ANIMALS_TRAIN, LABEL_ANIMALS_TRAIN, X_ANIMALS_TEST, LABEL_ANIMALS_TEST, CLASS_ANIMALS_NAMES = util.getPklAnimals()
 # Reshape to add channel dimension (28, 28, 1) for CNN
 X_TRAIN = np.expand_dims(X_TRAIN, -1)
 X_TEST = np.expand_dims(X_TEST, -1)
@@ -41,10 +42,11 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.assertIsNotNone(self.cae.decoder)
         self.assertTrue(len(self.cae.history_dct) == 0)
 
-    def testFitPlot(self):
-        if IGNORE_TEST:
+    def testFitMNIST(self):
+        if IGNORE_TEST or not IS_PLOT:
             return
-        self.cae.fit(X_TRAIN, num_epoch=500, batch_size=256, validation_data=X_TEST, verbose=1)
+        self.cae.summary()
+        self.cae.fit(X_TRAIN, num_epoch=10, batch_size=256, validation_data=X_TEST, verbose=1)
         self.cae.summarizeModel()
         self.cae.plot(X_TEST)
         self.assertIsNotNone(self.cae.history)
@@ -58,6 +60,21 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.assertIsNotNone(cae2.encoder)
         self.assertIsNotNone(cae2.decoder)
         self.assertTrue(len(cae2.history_dct) != 0)
+
+    def testFitAnimals(self):
+        #if IGNORE_TEST or not IS_PLOT:
+        #    return
+        encode_dims = [256, 128, 64]
+        cae = ConvolutionalAutoencoder(image_shape=[96, 96, 3],
+                hidden_dims=encode_dims,
+                num_detector=32,
+                is_delete_serializations=True)
+        cae.summary()
+        cae.fit(X_ANIMALS_TRAIN, num_epoch=500, batch_size=256, validation_data=X_ANIMALS_TEST, verbose=1)
+        cae.plot(X_ANIMALS_TEST)
+        self.assertIsNotNone(cae.history)
+        self.assertIn('loss', cae.history.history)
+        import pdb; pdb.set_trace()  # FIXME
 
     def testEncoderDecoder1(self):
         if IGNORE_TEST:
@@ -83,8 +100,8 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.assertTrue(np.all(decoder_prediction.shape == X_TEST.shape))
 
     def testPlotEncodedLabels(self):
-        #if IGNORE_TEST or not IS_PLOT:
-        #    return
+        if IGNORE_TEST:
+            return
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 hidden_dims=ENCODE_DIMS,
                 is_delete_serializations=False)

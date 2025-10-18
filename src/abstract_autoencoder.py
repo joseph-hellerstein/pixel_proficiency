@@ -112,6 +112,9 @@ class AbstractAutoencoder(object):
         # Generate predictions
         if x_predicted_arr is None:
             x_predicted_arr = self.predict(x_original_arr)
+        else:
+            x_predicted_arr = x_predicted_arr.copy()
+        x_predicted_arr = x_predicted_arr.astype('uint8')
         # Visualize results
         num_display = 10  # Number of images to display
         plt.figure(figsize=(20, 4))
