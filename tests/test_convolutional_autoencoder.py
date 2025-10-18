@@ -64,17 +64,16 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
     def testFitAnimals(self):
         #if IGNORE_TEST or not IS_PLOT:
         #    return
-        encode_dims = [256, 128, 64]
+        encode_dims = [512, 256, 128]
         cae = ConvolutionalAutoencoder(image_shape=[96, 96, 3],
                 hidden_dims=encode_dims,
-                num_detector=32,
+                num_detector=2,
                 is_delete_serializations=True)
         cae.summary()
-        cae.fit(X_ANIMALS_TRAIN, num_epoch=500, batch_size=256, validation_data=X_ANIMALS_TEST, verbose=1)
+        cae.fit(X_ANIMALS_TRAIN, num_epoch=100, batch_size=256, validation_data=X_ANIMALS_TEST, verbose=1)
         cae.plot(X_ANIMALS_TEST)
         self.assertIsNotNone(cae.history)
         self.assertIn('loss', cae.history.history)
-        import pdb; pdb.set_trace()  # FIXME
 
     def testEncoderDecoder1(self):
         if IGNORE_TEST:
