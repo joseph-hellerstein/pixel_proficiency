@@ -61,14 +61,9 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             keras.Model: The constructed autoencoder model.
         """
         # Check if the model already exists
-        result = self.deserializeAll(BASE_PATH)
         history_dct: dict = {}
-        if result is not None:
-            print("Loading existing model and history...")
-            return result.autoencoder, result.encoder, result.decoder, result.history_dct  # type: ignore
         # No existing model. Must build a new one.
         input_img = keras.Input(shape=self.image_shape)
-        num_detector = max(self.num_detector, self.image_shape[-1])
         """
         # Encoder
         encoded = layers.Conv2D(num_detector, (3, 3), activation='relu', padding='same')(input_img)
@@ -115,21 +110,12 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         decoded = layers.Conv2DTranspose(2*self.num_detector, (3, 3), strides=(2, 2), activation='relu', padding='same')(decoded)
         decoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation='relu', padding='same')(decoded)
         """
-        # Encoder - progressively downsample with convolutions
-        encoded = layers.Conv2D(32, (3, 3), activation='sigmoid', padding='same')(input_img)  # 96x96x32
-        encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 48x48x32
+        """
+        decoded = layers.Conv2DTranspose(128, (3, 3), strides=(2, 2), activation='sigmoid', padding='same')(encoded)  # 24x24x128
+        decoded = layers.Conv2DTranspose(64, (3, 3), strides=(2, 2), activation='sigmoid', padding='same')(decoded)  # 48x48x64
+        decoded = layers.Conv2DTranspose(32, (3, 3), strides=(2, 2), activation='sigmoid', padding='same')(decoded)  # 96x96x32
+        decoded = layers.Conv2D(3, (3, 3), activation='sigmoid', padding='same')(decoded)  # 96x96x3
 
-        encoded = layers.Conv2D(64, (3, 3), activation='sigmoid', padding='same')(encoded)  # 48x48x64
-        encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 24x24x64
-
-        encoded = layers.Conv2D(128, (3, 3), activation='sigmoid', padding='same')(encoded)  # 24x24x128
-        encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 12x12x128
-
-        # Optional: add one or two dense layers for bottleneck if you want
-        # But keep it convolutional if possible
-        encoded = layers.Conv2D(self.num_detector, (3, 3), activation='sigmoid', padding='same')(encoded)  # 12x12xnum_detector
-
-        # Decoder - progressively upsample
         decoded = layers.Conv2D(128, (3, 3), activation='sigmoid', padding='same')(encoded)  # 12x12x128
         decoded = layers.UpSampling2D((2, 2))(decoded)  # 24x24x128
 
@@ -140,6 +126,28 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         decoded = layers.UpSampling2D((2, 2))(decoded)  # 96x96x32
 
         decoded = layers.Conv2D(3, (3, 3), activation='sigmoid', padding='same')(decoded)  
+        encoded = layers.Reshape((self.num_detector*144,))(encoded)  # 12*12=144
+        decoded = layers.Dense(self.hidden_dims[1], activation='sigmoid')(encoded)
+        decoded = layers.Dense(self.hidden_dims[0], activation='sigmoid')(decoded)
+        decoded = layers.Dense(self.image_size, activation='sigmoid')(decoded)
+        decoded = layers.Reshape(self.image_shape)(decoded)  # 12*12=144
+        """
+        # Downsampling
+        encoded = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_img)  # 96x96x32
+        encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 48x48x32
+        encoded = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(encoded)  # 48x48x64
+        encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 24x24x64
+        encoded = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(encoded)  # 24x24x128
+        encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 12x12x128
+
+        # Bottleneck
+        encoded = layers.Conv2D(self.num_detector, (3, 3), activation='relu', padding='same')(encoded)  # 12x12xnum_detector
+
+        # Decoder - progressively upsample with transposed convolutions
+        decoded = layers.Conv2DTranspose(128, (3, 3), strides=(2, 2), activation='relu', padding='same')(encoded)  # 24x24x128
+        decoded = layers.Conv2DTranspose(64, (3, 3), strides=(2, 2), activation='relu', padding='same')(decoded)  # 48x48x64
+        decoded = layers.Conv2DTranspose(32, (3, 3), strides=(2, 2), activation='relu', padding='same')(decoded)  # 96x96x32
+        decoded = layers.Conv2D(3, (3, 3), activation='sigmoid', padding='same')(decoded)  # 96x96x3
         # Create and compile the models
         encoder = keras.Model(input_img, encoded, name="encoder")
         encoder.compile(optimizer='adam', loss='mse', metrics=['mae'])

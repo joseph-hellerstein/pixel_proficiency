@@ -46,7 +46,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         if IGNORE_TEST or not IS_PLOT:
             return
         self.cae.summary()
-        self.cae.fit(X_TRAIN, num_epoch=10, batch_size=256, validation_data=X_TEST, verbose=1)
+        self.cae.fit(X_TRAIN, num_epoch=10, batch_size=128, validation_data=X_TEST, verbose=1)
         self.cae.summarizeModel()
         self.cae.plot(X_TEST)
         self.assertIsNotNone(self.cae.history)
@@ -67,10 +67,10 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         encode_dims = [512, 256, 128]
         cae = ConvolutionalAutoencoder(image_shape=[96, 96, 3],
                 hidden_dims=encode_dims,
-                num_detector=2,
+                num_detector=32,
                 is_delete_serializations=True)
         cae.summary()
-        cae.fit(X_ANIMALS_TRAIN, num_epoch=100, batch_size=256, validation_data=X_ANIMALS_TEST, verbose=1)
+        cae.fit(X_ANIMALS_TRAIN, num_epoch=20, batch_size=128, validation_data=X_ANIMALS_TEST, verbose=1)
         cae.plot(X_ANIMALS_TEST)
         self.assertIsNotNone(cae.history)
         self.assertIn('loss', cae.history.history)

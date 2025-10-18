@@ -22,11 +22,14 @@ class AbstractAutoencoder(object):
         """
         self.base_path = base_path
         self.autoencoder, self.encoder, self.decoder, self.history_dct =  \
-                self._build()
-        if is_delete_serializations:
+                self.deserializeAll(base_path=base_path)
+        self.is_fit = False
+        if is_delete_serializations or self.autoencoder is None:
             self.deleteSerializations(base_path=base_path)
+            self.autoencoder, self.encoder, self.decoder, self.history_dct =  \
+                    self._build()
         else:
-            self.deserializeAll(base_path=base_path)
+            self.is_fit = True
 
     @property
     def compression_factor(self) -> float:
@@ -65,11 +68,16 @@ class AbstractAutoencoder(object):
             validation_data: np.ndarray,
             verbose: int=1) -> None:
         # Train the autoencoder
-        self.history = self.autoencoder.fit(x_train, x_train,
+        if self.is_fit:
+            print("Model is already fit. Skipping training.")
+            return
+        x_train_nrml = self.normalizeImages(x_train)
+        x_validation_nrml = self.normalizeImages(validation_data)
+        self.history = self.autoencoder.fit(x_train_nrml, x_train_nrml,
                 epochs=num_epoch,
                 batch_size=batch_size,
                 shuffle=True,
-                validation_data=(validation_data, validation_data),
+                validation_data=(x_validation_nrml, x_validation_nrml),
                 verbose=verbose)
         self.history_dct = self.history.history
         self.serializeAll()
@@ -90,14 +98,17 @@ class AbstractAutoencoder(object):
         Returns:
             np.ndarray: array of reconstructed images
         """
+        image_arr_nrml = self.normalizeImages(image_arr)
         if predictor_type == "autoencoder":
-            return self.autoencoder.predict(image_arr)
+            predicted_nrml = self.autoencoder.predict(image_arr_nrml)
         elif predictor_type == "encoder":
-            return self.encoder.predict(image_arr)
+            predicted_nrml = self.encoder.predict(image_arr_nrml)
         elif predictor_type == "decoder":
-            return self.decoder.predict(image_arr)
+            predicted_nrml = self.decoder.predict(image_arr_nrml)
         else:
             raise ValueError(f"Unknown predictor type: {predictor_type}")
+        predicted_arr = self.denormalizeImages(predicted_nrml)
+        return predicted_arr
 
     def plot(self, x_original_arr: np.ndarray,
             x_predicted_arr: Optional[np.ndarray]=None) -> None:
@@ -206,10 +217,32 @@ class AbstractAutoencoder(object):
         with open(history_path, 'w') as f:
             json.dump(self.history_dct, f)
 
+    def normalizeImages(self, image_arr: np.ndarray) -> np.ndarray:
+        """Normalizes image pixel values to the range [0, 1].
+
+        Args:
+            image_arr (np.ndarray): array of images
+
+        Returns:
+            np.ndarray: normalized array of images
+        """
+        return image_arr.astype('float32') / 255.0
+
+    def denormalizeImages(self, image_arr: np.ndarray) -> np.ndarray:
+        """Denormalizes image pixel values from the range [0, 1] to [0, 255].
+
+        Args:
+            image_arr (np.ndarray): array of normalized images
+
+        Returns:
+            np.ndarray: denormalized array of images
+        """
+        return (image_arr * 255.0).astype(np.uint8)
+
     DeserializeResult = collections.namedtuple(
         'DeserializeResult', ['autoencoder', 'encoder', 'decoder', 'history_dct'])
     @classmethod
-    def deserializeAll(cls, base_path: str) -> Union[None, DeserializeResult]:
+    def deserializeAll(cls, base_path: str) -> DeserializeResult:
         """Deserializes the model and training history
 
         Args:
@@ -222,7 +255,7 @@ class AbstractAutoencoder(object):
                 and os.path.exists(encoder_path)
                 and os.path.exists(decoder_path)
                 and os.path.exists(history_path)):
-            return None
+            return cls.DeserializeResult(None, None, None, dict())
         autoencoder = cls.deserializeModel(autoencoder_path)
         encoder = cls.deserializeModel(encoder_path)
         decoder = cls.deserializeModel(decoder_path)
