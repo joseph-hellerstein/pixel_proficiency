@@ -2,6 +2,7 @@
 
 import collections
 import json
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau #  type: ignore
 import matplotlib.pyplot as plt#  type: ignore
 import matplotlib.cm as cm
 import numpy as np#  type: ignore
@@ -67,19 +68,56 @@ class AbstractAutoencoder(object):
             batch_size: int,
             validation_data: np.ndarray,
             verbose: int=1) -> None:
+        """Fits the autoencoder model to the training data. Checkpoint the model.
+
+        Args:
+            x_train (np.ndarray): Training data.
+            num_epoch (int): Number of epochs to train.
+            batch_size (int): Batch size for training.
+            validation_data (np.ndarray): Validation data.
+            verbose (int, optional): Verbosity level. Defaults to 1.
+        """
         # Train the autoencoder
         if self.is_fit:
             print("Model is already fit. Skipping training.")
             return
+        # Create a ModelCheckpoint callback
+        callbacks = [
+            ModelCheckpoint(
+                'best_autoencoder.keras',
+                monitor='val_loss',
+                save_best_only=True,
+                mode='min',
+                verbose=1
+            ),
+            EarlyStopping(
+                monitor='val_loss',
+                patience=15,
+                restore_best_weights=True,
+                verbose=1
+            ),
+            ReduceLROnPlateau(
+                monitor='val_loss',
+                factor=0.5,        # reduce LR by half
+                patience=5,        # after 5 epochs without improvement
+                min_lr=1e-7,
+                verbose=1
+            )
+        ]
+        # Normalize the data
         x_train_nrml = self.normalizeImages(x_train)
         x_validation_nrml = self.normalizeImages(validation_data)
-        self.history = self.autoencoder.fit(x_train_nrml, x_train_nrml,
-                epochs=num_epoch,
-                batch_size=batch_size,
-                shuffle=True,
-                validation_data=(x_validation_nrml, x_validation_nrml),
-                verbose=verbose)
+        self.history = self.autoencoder.fit(
+            x_train_nrml, x_train_nrml,
+            epochs=num_epoch,
+            batch_size=batch_size,
+            shuffle=True,
+            validation_data=(x_validation_nrml, x_validation_nrml),
+            callbacks=callbacks,
+            verbose=verbose
+        )
         self.history_dct = self.history.history
+        # Load the best model after training
         self.serializeAll()
     
     def summary(self) -> None:

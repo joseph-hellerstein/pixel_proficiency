@@ -60,8 +60,9 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         """
         history_dct: dict = {}
         input_img = keras.Input(shape=self.image_shape)
-        
+        # Build separately for the different image sizes
         if self.image_shape[0] == 96:
+            # Downsampling
             encoded: Any = None
             for idx, filter_size in enumerate(self.filter_sizes):
                 if idx == 0:
@@ -71,18 +72,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
                 encoded = layers.Conv2D(filter_size, (3, 3), activation='relu', padding='same')(input)
                 if idx < len(self.filter_sizes) - 1:
                     encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)
-            # Downsampling
-            """ encoded = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_img)  # 96x96x32
-            encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 48x48x32
-            encoded = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(encoded)  # 48x48x64
-            encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 24x24x64
-            encoded = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(encoded)  # 24x24x128
-            encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 12x12x128
-
-            # Bottleneck
-            encoded = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(encoded)  # 12x12xnum_detector """
-
-            # Decoder - progressively upsample with transposed convolutions
+            # Upsampling
             decoded: Any = None
             decoded_sizes = self.filter_sizes[:-1][::-1]  # reverse order except last
             for idx, filter_size in enumerate(decoded_sizes):
@@ -93,11 +83,6 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
                 decoded = layers.Conv2DTranspose(filter_size, (3, 3), strides=(2, 2), activation='relu',
                         padding='same')(input)
             decoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation='relu', padding='same')(decoded)
-
-            """ ecoded = layers.Conv2DTranspose(128, (3, 3), strides=(2, 2), activation='relu', padding='same')(encoded)  # 24x24x128
-            decoded = layers.Conv2DTranspose(64, (3, 3), strides=(2, 2), activation='relu', padding='same')(decoded)  # 48x48x64
-            decoded = layers.Conv2DTranspose(32, (3, 3), strides=(2, 2), activation='relu', padding='same')(decoded)  # 96x96x32
-            decoded = layers.Conv2D(3, (3, 3), activation='relu', padding='same')(decoded)  # 96x96x3 """
         else:
             # Encoder
             encoded = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_img)  # 28x28x32
