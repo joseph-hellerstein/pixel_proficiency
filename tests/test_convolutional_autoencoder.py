@@ -26,17 +26,15 @@ X_TEST = np.expand_dims(X_TEST, -1)
 class TestConvolutionalAutoencoder(unittest.TestCase):
 
     def setUp(self):
-        if IGNORE_TEST:
-            return
-        self.encode_dims = ENCODE_DIMS
+        self.filter_sizes = ENCODE_DIMS
         self.cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
-                hidden_dims=self.encode_dims,
+                filter_sizes=self.filter_sizes,
                 is_delete_serializations=True)
 
     def testConstructor(self):
         if IGNORE_TEST:
             return
-        self.assertEqual(self.cae.hidden_dims, self.encode_dims)
+        self.assertEqual(self.cae.filter_sizes, self.filter_sizes)
         self.assertIsNotNone(self.cae.autoencoder)
         self.assertIsNotNone(self.cae.encoder)
         self.assertIsNotNone(self.cae.decoder)
@@ -45,15 +43,14 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
     def testFitMNIST(self):
         if IGNORE_TEST or not IS_PLOT:
             return
-        self.cae.summary()
-        self.cae.fit(X_TRAIN, num_epoch=10, batch_size=128, validation_data=X_TEST, verbose=1)
+        self.cae.fit(X_TRAIN, num_epoch=20, batch_size=512, validation_data=X_TEST, verbose=1)
         self.cae.summarizeModel()
         self.cae.plot(X_TEST)
         self.assertIsNotNone(self.cae.history)
         self.assertIn('loss', self.cae.history.history)
         # Evaluate serialization
         cae2 = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
-                hidden_dims=self.encode_dims,
+                filter_sizes=self.filter_sizes,
                 is_delete_serializations=False)
         cae2.plot(X_TEST)
         self.assertIsNotNone(cae2.autoencoder)
@@ -64,22 +61,22 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
     def testFitAnimals(self):
         #if IGNORE_TEST or not IS_PLOT:
         #    return
-        encode_dims = [512, 256, 128]
         cae = ConvolutionalAutoencoder(image_shape=[96, 96, 3],
-                hidden_dims=encode_dims,
-                num_detector=32,
-                is_delete_serializations=True)
+                filter_sizes=[32, 16, 8],
+                #filter_sizes=[32, 128, 256, 16],
+                is_delete_serializations=False)
         cae.summary()
-        cae.fit(X_ANIMALS_TRAIN, num_epoch=20, batch_size=128, validation_data=X_ANIMALS_TEST, verbose=1)
+        cae.fit(X_ANIMALS_TRAIN, num_epoch=1000, batch_size=128, validation_data=X_ANIMALS_TEST, verbose=1)
         cae.plot(X_ANIMALS_TEST)
-        self.assertIsNotNone(cae.history)
-        self.assertIn('loss', cae.history.history)
+        self.assertIsNotNone(cae.history_dct)
+        self.assertIn('loss', cae.history_dct)
+        import pdb; pdb.set_trace()
 
     def testEncoderDecoder1(self):
         if IGNORE_TEST:
             return
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
-                hidden_dims=ENCODE_DIMS,
+                filter_sizes=ENCODE_DIMS,
                 is_delete_serializations=False)
         prediction_arr = cae.predict(X_TEST, predictor_type="encoder")
         x_test = cae.predict(prediction_arr, predictor_type="decoder")
@@ -89,20 +86,19 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         if IGNORE_TEST:
             return
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
-                hidden_dims=ENCODE_DIMS,
+                filter_sizes=ENCODE_DIMS,
                 is_delete_serializations=False)
         autoencoder_prediction = cae.predict(X_TEST, predictor_type="autoencoder")
         encoder_prediction = cae.predict(X_TEST, predictor_type="encoder")
         decoder_prediction = cae.predict(encoder_prediction, predictor_type="decoder")
         self.assertTrue(np.all(autoencoder_prediction.shape == X_TEST.shape))
-        self.assertTrue(np.all(encoder_prediction.shape[1] == cae.hidden_dims[-1]))
         self.assertTrue(np.all(decoder_prediction.shape == X_TEST.shape))
 
     def testPlotEncodedLabels(self):
         if IGNORE_TEST:
             return
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
-                hidden_dims=ENCODE_DIMS,
+                filter_sizes=ENCODE_DIMS,
                 is_delete_serializations=False)
         cae.plotEncoded(X_TEST, LABEL_TEST, max_num_point=300, lim=[-10, 500])
 if __name__ == '__main__':
