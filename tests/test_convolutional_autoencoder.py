@@ -62,7 +62,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         #if IGNORE_TEST or not IS_PLOT:
         #    return
         cae = ConvolutionalAutoencoder(image_shape=[96, 96, 3],
-                filter_sizes=[32, 16, 8],
+                filter_sizes=[64, 32, 8],
                 #filter_sizes=[32, 128, 256, 16],
                 is_delete_serializations=False)
         cae.summary()

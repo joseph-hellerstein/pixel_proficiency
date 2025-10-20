@@ -92,8 +92,9 @@ class AbstractAutoencoder(object):
             ),
             EarlyStopping(
                 monitor='val_loss',
-                patience=15,
+                patience=10,
                 restore_best_weights=True,
+                min_delta=1e-4,  # type: ignore
                 verbose=1
             ),
             ReduceLROnPlateau(
