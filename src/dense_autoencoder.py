@@ -163,6 +163,6 @@ class DenseAutoencoder(AbstractAutoencoder):
 
     @classmethod
     def doAnimalExperiments(cls, encode_dims: List[int], batch_size: int, base_path: str=cn.MODEL_DIR):
-        dae = cls(encode_dims, is_delete_serializations=False,
+        dae = cls(encode_dims, is_delete_serializations=True,
                 base_path=base_path)
         cls.runAnimalExperiment(dae, batch_size, dae.context_dct())
