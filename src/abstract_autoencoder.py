@@ -390,7 +390,7 @@ class AbstractAutoencoder(object):
         full_context_dct['batch_size'] = batch_size
         full_context_dct['autoencoder'] = str(autoencoder.__class__).split('.')[-1][:-2]
         x_animals_train, _, x_animals_test, __, __ = util.getPklAnimals()
-        autoencoder.fit(x_animals_train, num_epoch=1, batch_size=batch_size,
+        autoencoder.fit(x_animals_train, num_epoch=1000, batch_size=batch_size,
                 validation_data=x_animals_test, verbose=1)
         base_path = os.path.join(autoencoder.base_path, "animals_" + str(full_context_dct))
         for char in "'{}[] ":
