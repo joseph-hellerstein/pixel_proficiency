@@ -140,3 +140,12 @@ def getPklAnimals() -> TrainTestData:
         with open(cn.ANIMALS_PATH, 'rb') as f:  # type: ignore
             train_image_arr, train_label_arr, test_image_arr, test_label_arr, class_names = pickle.load(f)
     return TrainTestData(train_image_arr, train_label_arr, test_image_arr, test_label_arr, class_names)
+
+def dictToStr(dct: dict)->str:
+    result = ""
+    sep = ""
+    for key, value in dct.items():
+        if len(result) > 0:
+            sep = "-"
+        result = result + sep + key + "_" + str(value)
+    return result

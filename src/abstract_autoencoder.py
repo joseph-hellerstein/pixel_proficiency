@@ -1,4 +1,6 @@
 # Defines an abstract base class for autoencoders.
+import src.constants as cn  # type: ignore
+import src.util as util  # type: ignore
 
 import collections
 import json
@@ -8,6 +10,7 @@ import matplotlib.cm as cm
 import numpy as np#  type: ignore
 import os
 import pandas as pd#  type: ignore
+import shutil
 from tensorflow import keras #  type: ignore
 from tensorflow.keras.models import load_model # type: ignore
 from typing import Tuple, List, Any, Union, Optional
@@ -22,6 +25,7 @@ class AbstractAutoencoder(object):
             is_delete_serializations (bool, optional): Whether to delete existing serializations. Defaults to True.
         """
         self.base_path = base_path
+        self.png_pat = os.path.join(base_path, "%s.png") # pattern for naming plots
         self.autoencoder, self.encoder, self.decoder, self.history_dct =  \
                 self.deserializeAll(base_path=base_path)
         self.is_fit = False
@@ -35,6 +39,11 @@ class AbstractAutoencoder(object):
     @property
     def compression_factor(self) -> float:
         raise NotImplementedError("Subclasses must implement compression_factor property")
+    
+    #property
+    def context_dct(self) -> dict:
+        # Describes the parameters used to build the model.
+        raise NotImplementedError("Subclasses must implement context_dct property")
     
     def deleteSerializations(self, base_path: Optional[str] = None) -> None:
         """Deletes the serialized models and history files.
@@ -59,9 +68,6 @@ class AbstractAutoencoder(object):
         """
         raise NotImplementedError("Subclasses must implement _build method")
 
-    def summarizeModel(self) -> None:
-        self.autoencoder.summary()
-
     def fit(self, 
             x_train: np.ndarray,
             num_epoch: int,
@@ -69,6 +75,7 @@ class AbstractAutoencoder(object):
             validation_data: np.ndarray,
             verbose: int=1) -> None:
         """Fits the autoencoder model to the training data. Checkpoint the model.
+        Normalizes the data to [0, 1] before training.
 
         Args:
             x_train (np.ndarray): Training data.
@@ -94,7 +101,8 @@ class AbstractAutoencoder(object):
                 monitor='val_loss',
                 patience=10,
                 restore_best_weights=True,
-                min_delta=1e-4,  # type: ignore
+                # Use min_delta 0 since we don't know the right units to detect improvement
+                min_delta=0,  # type: ignore
                 verbose=1
             ),
             ReduceLROnPlateau(
@@ -121,7 +129,7 @@ class AbstractAutoencoder(object):
         # Load the best model after training
         self.serializeAll()
     
-    def summary(self) -> None:
+    def summarize(self) -> None:
         # Prints a summary of the autoencoder model.
         self.autoencoder.summary()
     
@@ -137,7 +145,12 @@ class AbstractAutoencoder(object):
         Returns:
             np.ndarray: array of reconstructed images
         """
-        image_arr_nrml = self.normalizeImages(image_arr)
+        # Prepare the input
+        if predictor_type in ["autoencoder", "encoder"]:
+            image_arr_nrml = self.normalizeImages(image_arr)
+        else:
+            image_arr_nrml = image_arr
+        # Make predictions
         if predictor_type == "autoencoder":
             predicted_nrml = self.autoencoder.predict(image_arr_nrml)
         elif predictor_type == "encoder":
@@ -146,11 +159,18 @@ class AbstractAutoencoder(object):
             predicted_nrml = self.decoder.predict(image_arr_nrml)
         else:
             raise ValueError(f"Unknown predictor type: {predictor_type}")
-        predicted_arr = self.denormalizeImages(predicted_nrml)
+        # Prepare the output
+        if predictor_type in ["autoencoder", "decoder"]:
+            predicted_arr = self.denormalizeImages(predicted_nrml)
+        else:
+            predicted_arr = predicted_nrml
+        #
         return predicted_arr
 
     def plot(self, x_original_arr: np.ndarray,
-            x_predicted_arr: Optional[np.ndarray]=None) -> None:
+            x_predicted_arr: Optional[np.ndarray]=None,
+            png_path: Optional[str]=None,
+            is_plot:bool = True) -> None:
         """Plots the training history and the reconstructed images.
 
         Args:
@@ -158,6 +178,7 @@ class AbstractAutoencoder(object):
             x_predicted_arr (np.ndarray, optional): array of predicted images.
                                                     If None, predictions are generated from x_original_arr.
                                                     Defaults to None.
+            png_path (str, optional): Path to save the plot. If None, the plot is not saved. Defaults to None.
         """
         # Generate predictions
         if x_predicted_arr is None:
@@ -166,21 +187,23 @@ class AbstractAutoencoder(object):
             x_predicted_arr = x_predicted_arr.copy()
         x_predicted_arr = x_predicted_arr.astype('uint8')
         # Visualize results
-        num_display = 10  # Number of images to display
-        plt.figure(figsize=(20, 4))
-        for i in range(num_display):
+        fig, axes = plt.subplots(2, 10, figsize=(20, 4))
+        for i in range(10):
             # Original images
-            ax = plt.subplot(2, num_display, i + 1)
+            ax = axes[0, i]
             ax.imshow(x_original_arr[i], cmap='gray')
             ax.set_title("Original")
             plt.axis('off')
             # Reconstructed images
-            ax = plt.subplot(2, num_display, i + 1 + num_display)
+            ax = axes[1, i]
             ax.imshow(x_predicted_arr[i], cmap='gray')
             ax.set_title("Reconstructed")
             plt.axis('off')
         plt.tight_layout()
-        plt.show()
+        if png_path is not None:
+            fig.savefig(png_path, dpi=300, bbox_inches="tight")
+        if is_plot:
+            plt.show()
 
         # Print compression statistics
         """ print(f"\nOriginal image size: 784 pixels")
@@ -224,12 +247,15 @@ class AbstractAutoencoder(object):
         return history_dict
     
     @staticmethod
-    def _makeSerializationPaths(base_path: str) -> Tuple[str, str, str, str]:
+    def _makeSerializationPaths(base_path: str, serialize_dir=cn.MODEL_DIR) -> Tuple[str, str, str, str]:
         """Generates paths for model and history serialization.
 
         Args:
             base_path (str): Base path for saving the autoencoder,
                                 encoder, decoder, and history.
+            serialize_dir (str): Directory to save the models.
+        Returns:
+            Tuple[str, str, str, str]: Paths for autoencoder, encoder, decoder, and history.
 
         """
         autoencoder_path = f"{base_path}_autoencoder.keras"
@@ -340,3 +366,43 @@ class AbstractAutoencoder(object):
         str_labels = [str(l) for l in labels]
         plt.legend(str_labels)
         plt.show()
+
+    ExperimentResult = collections.namedtuple('ExperimentResult',
+            ['batch_size', 'history', 'base_path', 'context_str'])
+    @classmethod
+    def runAnimalExperiment(cls,
+            autoencoder: 'AbstractAutoencoder',
+            batch_size: int,
+            context_dct: dict,
+            ) -> ExperimentResult:
+        """Run an experiment on the animal dataset.
+
+        Args:
+            autoencoder (AbstractAutoencoder): The autoencoder to use.
+            batch_size (int): The batch size to use for training.
+
+        Returns:
+            ExperimentResult: The result of the experiment.
+        """
+        autoencoder.summarize()
+        #
+        full_context_dct = dict(context_dct)
+        full_context_dct['batch_size'] = batch_size
+        full_context_dct['autoencoder'] = str(autoencoder.__class__).split('.')[-1][:-2]
+        x_animals_train, _, x_animals_test, __, __ = util.getPklAnimals()
+        autoencoder.fit(x_animals_train, num_epoch=1, batch_size=batch_size,
+                validation_data=x_animals_test, verbose=1)
+        base_path = os.path.join(autoencoder.base_path, "animals_" + str(full_context_dct))
+        for char in "'{}[] ":
+            base_path = base_path.replace(char, "")
+        base_path = base_path.replace(":", "-")
+        base_path = base_path.replace(",", "__")
+        autoencoder.serializeAll(base_path=base_path)
+        autoencoder.plot(x_animals_test,
+                png_path=base_path + ".png",
+                is_plot=False,
+        )
+        return cls.ExperimentResult(batch_size=batch_size,
+                base_path=base_path,
+                history=autoencoder.history_dct,
+                context_str=util.dictToStr(autoencoder.context_dct()))

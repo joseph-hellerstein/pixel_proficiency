@@ -13,3 +13,6 @@ MNIST_TRAIN_PATH = os.path.join(DATA_DIR, "mnist_train.pkl")
 MNIST_TEST_PATH = os.path.join(DATA_DIR, "mnist_test.pkl")
 MNIST_PATH = os.path.join(DATA_DIR, "mnist.pkl")
 ANIMALS_PATH = os.path.join(DATA_DIR, "animals.pkl")
+#
+ANIMALS_IMAGE_SHAPE = [96, 96, 3]
+MNIST_IMAGE_SHAPE = [28, 28, 1]

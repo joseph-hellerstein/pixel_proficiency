@@ -51,6 +51,14 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         self.image_size = np.prod(image_shape)
         super().__init__(base_path=base_path,
                 is_delete_serializations=is_delete_serializations)
+        
+    def context_dct(self) -> dict:
+        # Describes the parameters used to build the model.
+        context_dct = {
+            'image_shape': self.image_shape,
+            'filter_sizes': self.filter_sizes,
+        }
+        return context_dct
 
     def _build(self) -> Tuple[keras.Model, keras.Model, keras.Model, dict]:
         """Builds the convolutional autoencoder model.
@@ -60,43 +68,32 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         """
         history_dct: dict = {}
         input_img = keras.Input(shape=self.image_shape)
-        # Build separately for the different image sizes
-        if self.image_shape[0] == 96:
-            # Downsampling
-            encoded: Any = None
-            for idx, filter_size in enumerate(self.filter_sizes):
-                if idx == 0:
-                    input = input_img
-                else:
-                    input = encoded
-                encoded = layers.Conv2D(filter_size, (3, 3), activation='relu', padding='same')(input)
-                if idx < len(self.filter_sizes) - 1:
-                    encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)
-            # Upsampling
-            decoded: Any = None
-            decoded_sizes = self.filter_sizes[:-1][::-1]  # reverse order except last
-            for idx, filter_size in enumerate(decoded_sizes):
-                if idx == 0:
-                    input = encoded
-                else:
-                    input = decoded
-                decoded = layers.Conv2DTranspose(filter_size, (3, 3), strides=(2, 2), activation='relu',
-                        padding='same')(input)
-            decoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation='relu', padding='same')(decoded)
-        else:
-            # Encoder
-            encoded = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_img)  # 28x28x32
-            encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 14x14x32
-            encoded = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(encoded)  # 14x14x64
-            encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)  # 7x7x64
-
-            # Bottleneck
-            encoded = layers.Conv2D(2, (3, 3), activation='relu', padding='same')(encoded)  # 7x7x32
-
-            # Decoder
-            decoded = layers.Conv2DTranspose(64, (3, 3), strides=(2, 2), activation='relu', padding='same')(encoded)  # 14x14x64
-            decoded = layers.Conv2DTranspose(32, (3, 3), strides=(2, 2), activation='relu', padding='same')(decoded)  # 28x28x32
-            decoded = layers.Conv2D(1, (3, 3), activation='relu', padding='same')(decoded)  # 28x28x1
+        # Validate the network implied by filter_sizes
+        reduction_factor = self._calculateSizeReductionFromDownsampling()
+        if (self.image_shape[0]*self.image_shape[1]) % reduction_factor != 0:
+            raise ValueError(f"Image size {self.image_shape[0]}x{self.image_shape[1]} is not compatible with "
+                    f"the reduction factor {reduction_factor} implied by filter_sizes {self.filter_sizes}")
+        # Downsampling
+        encoded: Any = None
+        for idx, filter_size in enumerate(self.filter_sizes):
+            if idx == 0:
+                input = input_img
+            else:
+                input = encoded
+            encoded = layers.Conv2D(filter_size, (3, 3), activation='relu', padding='same')(input)
+            if idx < len(self.filter_sizes) - 1:
+                encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)
+        # Upsampling
+        decoded: Any = None
+        decoded_sizes = self.filter_sizes[:-1][::-1]  # reverse order except last
+        for idx, filter_size in enumerate(decoded_sizes):
+            if idx == 0:
+                input = encoded
+            else:
+                input = decoded
+            decoded = layers.Conv2DTranspose(filter_size, (3, 3), strides=(2, 2), activation='relu',
+                    padding='same')(input)
+        decoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation='relu', padding='same')(decoded)
         # Create and compile the models
         encoder = keras.Model(input_img, encoded, name="encoder")
         encoder.compile(optimizer='adam', loss='mse', metrics=['mae'])
@@ -126,38 +123,20 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
                 raise ValueError(f"Input image shape {image_arr.shape[1:]} != image shape {self.image_shape}")
         reconstructed = super().predict(image_arr, predictor_type=predictor_type)
         return reconstructed
+    
+    def _calculateSizeReductionFromDownsampling(self) -> int:
+        reduction_factor = 4**(len(self.filter_sizes) - 1)
+        return reduction_factor
 
     @property
     def compression_factor(self) -> float:
-        #return float(self.image_size / self.hidden_dims[-1])
-        raise NotImplementedError("Compression factor is not defined for ConvolutionalAutoencoder")
+        # Calculates the ratio between the original image size and the bottleneck size.
+        # The bottleneck is determined by the last filter size and the downsampling factor.
+        reduction_factor = self._calculateSizeReductionFromDownsampling()
+        return float(self.image_size / reduction_factor) * self.filter_sizes[-1]
 
-    ExperimentResult = namedtuple('ExperimentResult',
-            ['batch_size', 'num_filter', 'num_epoch', 'history', 'base_path'])
-    @classmethod
-    def runAnimalExperiment(cls, batch_size: int, num_filter: int, num_epoch: int,
-            filter_sizes: list=[512, 256, 128, 32]) -> ExperimentResult:
-        """Run an experiment on the animal dataset.
-
-        Args:
-            batch_size (int): The batch size to use for training.
-            num_filter (int): The number of filters to use in the convolutional layers.
-            num_epoch (int): The number of epochs to train for.
-
-        Returns:
-            ExperimentResult: The result of the experiment.
-        """
-        X_ANIMALS_TRAIN, _, X_ANIMALS_TEST, __, __ = util.getPklAnimals()
-        IMAGE_SHAPE = np.shape(X_ANIMALS_TRAIN[0])
-        cae = cls(image_shape=IMAGE_SHAPE,  # type: ignore
-                filter_sizes=filter_sizes,
-                is_delete_serializations=True)
-        cae.fit(X_ANIMALS_TRAIN, num_epoch=num_epoch, batch_size=batch_size, validation_data=X_ANIMALS_TEST, verbose=1)
-        base_filename = f"animal_experiment-bsize_{batch_size}-filter_{filter_sizes}-epoch_{num_epoch}"
-        base_path = os.path.join(cn.MODEL_DIR, base_filename)
-        cae.serializeAll(base_path=base_path)
-        return cls.ExperimentResult(batch_size=batch_size,
-                num_filter=num_filter,
-                num_epoch=num_epoch,
-                base_path=base_path,
-                history=cae.history)
+    @classmethod 
+    def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=BASE_PATH):
+        cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=False,
+                base_path=base_path + "animals")
+        cls.runAnimalExperiment(cae, batch_size, cae.context_dct())
