@@ -55,12 +55,17 @@ class TestDeterministicAutoencoder(unittest.TestCase):
         #    return
         encode_dims = [784, 128, 64, 32]
         encode_dims = [784, 256, 128, 16]
-        dae = DenseAutoencoder(encode_dims, is_delete_serializations=False)
+        dae = DenseAutoencoder(encode_dims, is_delete_serializations=True)
         dae.fit(X_TRAIN, num_epoch=1000, batch_size=128, validation_data=X_TEST, verbose=1)
         dae.summarize()
         dae.plot(X_TEST)
         self.assertIn('loss', dae.history_dct)
         self.assertIn('val_loss', dae.history_dct)
+
+    def testDoAnimalExperiments(self):
+        if IGNORE_TEST:
+            return
+        DenseAutoencoder.doAnimalExperiments(encode_dims=[96*96*3, 512, 128, 64], batch_size=128)
 
 if __name__ == '__main__':
     unittest.main()

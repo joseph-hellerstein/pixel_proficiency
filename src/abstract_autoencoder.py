@@ -16,6 +16,8 @@ from tensorflow.keras.models import load_model # type: ignore
 from typing import Tuple, List, Any, Union, Optional
 
 
+MAX_EPOCH = 1000   # Maximum number of epochs for training
+
 class AbstractAutoencoder(object):
 
     def __init__(self, base_path: str, is_delete_serializations: bool=True):
@@ -91,7 +93,7 @@ class AbstractAutoencoder(object):
         # Create a ModelCheckpoint callback
         callbacks = [
             ModelCheckpoint(
-                'best_autoencoder.keras',
+                os.path.join(cn.MODEL_DIR, 'best_autoencoder.keras'),
                 monitor='val_loss',
                 save_best_only=True,
                 mode='min',
@@ -390,7 +392,7 @@ class AbstractAutoencoder(object):
         full_context_dct['batch_size'] = batch_size
         full_context_dct['autoencoder'] = str(autoencoder.__class__).split('.')[-1][:-2]
         x_animals_train, _, x_animals_test, __, __ = util.getPklAnimals()
-        autoencoder.fit(x_animals_train, num_epoch=1000, batch_size=batch_size,
+        autoencoder.fit(x_animals_train, num_epoch=MAX_EPOCH, batch_size=batch_size,
                 validation_data=x_animals_test, verbose=1)
         base_path = os.path.join(autoencoder.base_path, "animals_" + str(full_context_dct))
         for char in "'{}[] ":

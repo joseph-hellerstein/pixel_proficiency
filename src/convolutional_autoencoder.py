@@ -137,6 +137,6 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
 
     @classmethod 
     def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=BASE_PATH):
-        cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=False,
-                base_path=base_path + "animals")
+        cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=True,
+                base_path=base_path)
         cls.runAnimalExperiment(cae, batch_size, cae.context_dct())

@@ -111,7 +111,7 @@ class DenseAutoencoder(AbstractAutoencoder):
         result_shape[0] = np.shape(arr)[0]
         result_shape[1:] = self.image_shape
         result = np.reshape(arr, result_shape.astype(int))
-        return result.astype('float32')
+        return result
 
     def fit(self, 
             x_train: np.ndarray,

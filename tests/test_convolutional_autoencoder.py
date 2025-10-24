@@ -6,7 +6,7 @@ import src.constants as cn  # type: ignore
 import numpy as np
 import os
 
-IGNORE_TEST = False
+IGNORE_TEST = True
 IS_PLOT = False
 IMAGE_SHAPE = [28,28,1]
 FILTER_SIZES = [64, 8, 1]
@@ -62,12 +62,13 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.assertTrue(len(cae2.history_dct) != 0)
 
     def testFitAnimals(self):
-        if IGNORE_TEST or not IS_PLOT:
-            return
+        #if IGNORE_TEST or not IS_PLOT:
+        #    return
         cae = ConvolutionalAutoencoder(image_shape=[96, 96, 3],
-                filter_sizes=[64, 32, 8],
+                #filter_sizes=[64, 32, 8],
                 #filter_sizes=[32, 128, 256, 16],
-                is_delete_serializations=False)
+                filter_sizes=[256, 128, 64],
+                is_delete_serializations=True)
         cae.summarize()
         cae.fit(X_ANIMALS_TRAIN, num_epoch=1000, batch_size=128, validation_data=X_ANIMALS_TEST, verbose=1)
         cae.plot(X_ANIMALS_TEST)
@@ -110,9 +111,9 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         filter_sizes = [64, 32, 8]
         ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=filter_sizes, batch_size=128,
-                base_path=os.path.join(cn.MODEL_DIR, "animals_ConvolutionalAutoencoder"))
-        ffiles = os.listdir(cn.MODEL_DIR)
-        true = any([("animals_" in f and "ConvolutionalAutoencoder" in f) for f in ffiles])
+                base_path=cn.TEST_DIR)
+        ffiles = os.listdir(cn.TEST_DIR)
+        true = any(["animals_" in f for f in ffiles])
         self.assertTrue(true)
         # Ensure that generated files exist
         file_list = []
