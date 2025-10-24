@@ -125,5 +125,10 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             selected_files = set(selected_files).intersection(set(files))
         self.assertTrue(len(selected_files) > 0)
 
+    def testBug(self):
+        if IGNORE_TEST:
+            return
+        ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=[64, 32, 8], batch_size=128)
+
 if __name__ == '__main__':
     unittest.main()

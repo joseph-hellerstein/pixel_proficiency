@@ -15,8 +15,6 @@ import os
 from typing import List, Tuple, Union, Any
 
 
-BASE_PATH = os.path.join(cn.MODEL_DIR, "convolutional_autoencoder")
-
 # Prepare the data
 X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST, CLASS_NAMES = util.getPklMNIST()
 # Reshape to add channel dimension (28, 28, 1) for CNN
@@ -30,7 +28,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
 
     def __init__(self, image_shape: Union[Tuple[int], List[int]],
             filter_sizes: List[int] = [32, 64, 128, 32],
-            base_path: str=BASE_PATH,
+            base_path: str=cn.MODEL_DIR,
             is_delete_serializations: bool=True):
         """Initializes the convolutional autoencoder.
 
@@ -136,7 +134,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         return float(self.image_size / reduction_factor) * self.filter_sizes[-1]
 
     @classmethod 
-    def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=BASE_PATH):
+    def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.MODEL_DIR):
         cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=True,
                 base_path=base_path)
         cls.runAnimalExperiment(cae, batch_size, cae.context_dct())
