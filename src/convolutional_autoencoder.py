@@ -1,3 +1,5 @@
+'''Autoencoder that uses convolutional layers for autoencoding images. Images are 2D with a channel dimension.'''
+
 import src.constants as cn  # type: ignore
 import src.util as util  # type: ignore
 from src.abstract_autoencoder import AbstractAutoencoder  # type: ignore
@@ -15,21 +17,15 @@ import os
 from typing import List, Tuple, Union, Any
 
 
-# Prepare the data
-X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST, CLASS_NAMES = util.getPklMNIST()
-# Reshape to add channel dimension (28, 28, 1) for CNN
-X_TRAIN = np.expand_dims(X_TRAIN, -1)
-X_TEST = np.expand_dims(X_TEST, -1)
-
-print(f"Training data shape: {X_TRAIN.shape}")
-print(f"Test data shape: {X_TEST.shape}")
-
 class ConvolutionalAutoencoder(AbstractAutoencoder):
 
     def __init__(self, image_shape: Union[Tuple[int], List[int]],
             filter_sizes: List[int] = [32, 64, 128, 32],
             base_path: str=cn.MODEL_DIR,
-            is_delete_serializations: bool=True):
+            is_delete_serializations: bool=True,
+            activation: str='sigmoid',
+            is_early_stopping: bool = True,
+            is_verbose: bool = False):
         """Initializes the convolutional autoencoder.
 
         Args:
@@ -37,6 +33,8 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             filter_sizes (List[int]): dimensions of the filters. Last one is the filter for the bottleneck
             base_path (str, optional): Base path for model serialization. Defaults to BASE_PATH.
             is_delete_serializations (bool, optional): Whether to delete existing serializations. Defaults to
+            activation (str, optional): Activation function to use in the layers. Defaults to 'sigmoid'.
+            is_early_stropping (bool, optional): Whether to use early stopping during training. Defaults to True.
         """
         if len(image_shape) < 2 or len(image_shape) > 3:
             raise ValueError("image_shape must be of length 2 or 3")
@@ -47,14 +45,15 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             raise ValueError("filter_sizes must have at least one element")
         self.filter_sizes = filter_sizes
         self.image_size = np.prod(image_shape)
-        super().__init__(base_path=base_path,
-                is_delete_serializations=is_delete_serializations)
-        
+        super().__init__(base_path=base_path, is_delete_serializations=is_delete_serializations,
+                activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose)
+
     def context_dct(self) -> dict:
         # Describes the parameters used to build the model.
         context_dct = {
             'image_shape': self.image_shape,
             'filter_sizes': self.filter_sizes,
+            'activation': self.activation,
         }
         return context_dct
 
@@ -78,7 +77,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
                 input = input_img
             else:
                 input = encoded
-            encoded = layers.Conv2D(filter_size, (3, 3), activation='relu', padding='same')(input)
+            encoded = layers.Conv2D(filter_size, (3, 3), activation=self.activation, padding='same')(input)
             if idx < len(self.filter_sizes) - 1:
                 encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)
         # Upsampling
@@ -89,9 +88,9 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
                 input = encoded
             else:
                 input = decoded
-            decoded = layers.Conv2DTranspose(filter_size, (3, 3), strides=(2, 2), activation='relu',
+            decoded = layers.Conv2DTranspose(filter_size, (3, 3), strides=(2, 2), activation=self.activation,
                     padding='same')(input)
-        decoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation='relu', padding='same')(decoded)
+        decoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation=self.activation, padding='same')(decoded)
         # Create and compile the models
         encoder = keras.Model(input_img, encoded, name="encoder")
         encoder.compile(optimizer='adam', loss='mse', metrics=['mae'])
@@ -134,7 +133,8 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         return float(self.image_size / reduction_factor) * self.filter_sizes[-1]
 
     @classmethod 
-    def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.MODEL_DIR):
+    def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
+            num_epoch: int=1000):
         cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=True,
                 base_path=base_path)
-        cls.runAnimalExperiment(cae, batch_size, cae.context_dct())
+        cls.runAnimalExperiment(cae, batch_size, cae.context_dct(), num_epoch=num_epoch)

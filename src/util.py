@@ -89,26 +89,28 @@ def unpklMNIST() -> Tuple[np.ndarray, np.ndarray]:
         x_test = pickle.load(f)
     return x_train, x_test
 
-def getPklMNIST() -> TrainTestData:
+def getPklMNIST(is_verbose: bool = False) -> TrainTestData:
     """Recovers MNIST image data from pickle files, or pickles the data if not present.
 
     Returns:
         TrainTestData: A named tuple containing training and test data and labels.
     """
     if not os.path.exists(cn.MNIST_PATH):
-        print("***Pickling MNIST data...")
+        if is_verbose:
+            print("***Pickling MNIST data...")
         (x_train, label_train), (x_test, label_test) = mnist.load_data()
         data = (x_train, label_train, x_test, label_test)
         with open(cn.MNIST_PATH, 'wb') as f:
             pickle.dump(data, f)
     else:
-        print("***Unpickling MNIST data...")
+        if is_verbose:
+            print("***Unpickling MNIST data...")
         with open(cn.MNIST_PATH, 'rb') as f:
             x_train, label_train, x_test, label_test = pickle.load(f)
     class_names = [str(i) for i in range(10)]
     return TrainTestData(x_train, label_train, x_test, label_test, class_names)
 
-def getPklAnimals() -> TrainTestData:
+def getPklAnimals(is_verbose: bool = False) -> TrainTestData:
     """Recovers Animals image data from pickle files, or pickles the data if not present.
 
     Returns:
@@ -129,14 +131,16 @@ def getPklAnimals() -> TrainTestData:
         return images_array, labels_array, class_names
     ##
     if not os.path.exists(cn.ANIMALS_PATH):
-        print("***Pickling Animals data...")
+        if is_verbose:
+            print("***Pickling Animals data...")
         train_image_arr, train_label_arr, class_names = getData('train')
         test_image_arr, test_label_arr, class_names = getData('test')
         data = (train_image_arr, train_label_arr, test_image_arr, test_label_arr, class_names)
         with open(cn.ANIMALS_PATH, 'wb') as f:
             pickle.dump(data, f)
     else:
-        print("***Unpickling Animals data...")
+        if is_verbose:
+            print("***Unpickling Animals data...")
         with open(cn.ANIMALS_PATH, 'rb') as f:  # type: ignore
             train_image_arr, train_label_arr, test_image_arr, test_label_arr, class_names = pickle.load(f)
     return TrainTestData(train_image_arr, train_label_arr, test_image_arr, test_label_arr, class_names)

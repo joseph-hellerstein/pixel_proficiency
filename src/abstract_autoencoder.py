@@ -10,32 +10,43 @@ import matplotlib.cm as cm
 import numpy as np#  type: ignore
 import os
 import pandas as pd#  type: ignore
-import shutil
 from tensorflow import keras #  type: ignore
 from tensorflow.keras.models import load_model # type: ignore
-from typing import Tuple, List, Any, Union, Optional
+from typing import Tuple, List, Optional
 
 
 MAX_EPOCH = 1000   # Maximum number of epochs for training
 
 class AbstractAutoencoder(object):
 
-    def __init__(self, base_path: str, is_delete_serializations: bool=True):
+    def __init__(self, base_path: str, is_delete_serializations: bool=True,
+            activation: str='sigmoid',
+            is_early_stopping: bool = True,
+            is_verbose: bool = False):
         """Initializes the abstract autoencoder.
         Args:
             base_path (str): Base path for model serialization.
             is_delete_serializations (bool, optional): Whether to delete existing serializations. Defaults to True.
+            self.activation (str, optional): Activation function to use in the model. Defaults to 'sigmoid'.
+            is_early_stopping (bool, optional): Whether to use early stopping during training. Defaults to True.
+            is_verbose (bool, optional): Whether to print verbose messages. Defaults to True.
         """
         self.base_path = base_path
+        self.activation = activation
+        self.is_early_stopping = is_early_stopping
+        self.is_verbose = is_verbose
+        #
         self.png_pat = os.path.join(base_path, "%s.png") # pattern for naming plots
         self.autoencoder, self.encoder, self.decoder, self.history_dct =  \
                 self.deserializeAll(base_path=base_path)
         self.is_fit = False
         if is_delete_serializations or self.autoencoder is None:
+            self.print("...deleting existing serializations (if any) and rebuilding the model.")
             self.deleteSerializations(base_path=base_path)
             self.autoencoder, self.encoder, self.decoder, self.history_dct =  \
                     self._build()
         else:
+            self.print("...loaded existing serializations.")
             self.is_fit = True
 
     @property
@@ -75,7 +86,8 @@ class AbstractAutoencoder(object):
             num_epoch: int,
             batch_size: int,
             validation_data: np.ndarray,
-            verbose: int=1) -> None:
+            is_verbose: Optional[bool]=None,
+            ) -> None:
         """Fits the autoencoder model to the training data. Checkpoint the model.
         Normalizes the data to [0, 1] before training.
 
@@ -86,35 +98,44 @@ class AbstractAutoencoder(object):
             validation_data (np.ndarray): Validation data.
             verbose (int, optional): Verbosity level. Defaults to 1.
         """
+        if is_verbose is None:
+            is_verbose = self.is_verbose
+        if is_verbose:
+            verbose = 1
+        else:
+            verbose = 0
         # Train the autoencoder
         if self.is_fit:
             print("Model is already fit. Skipping training.")
             return
         # Create a ModelCheckpoint callback
-        callbacks = [
-            ModelCheckpoint(
-                os.path.join(cn.MODEL_DIR, 'best_autoencoder.keras'),
-                monitor='val_loss',
-                save_best_only=True,
-                mode='min',
-                verbose=1
-            ),
-            EarlyStopping(
-                monitor='val_loss',
-                patience=10,
-                restore_best_weights=True,
-                # Use min_delta 0 since we don't know the right units to detect improvement
-                min_delta=0,  # type: ignore
-                verbose=1
-            ),
-            ReduceLROnPlateau(
-                monitor='val_loss',
-                factor=0.5,        # reduce LR by half
-                patience=5,        # after 5 epochs without improvement
-                min_lr=1e-7,
-                verbose=1
+        callbacks: list = []
+        if self.is_early_stopping:
+            callbacks.extend(
+                [ModelCheckpoint(
+                    os.path.join(cn.MODEL_DIR, 'best_autoencoder.keras'),
+                    monitor='val_loss',
+                    save_best_only=True,
+                    mode='min',
+                    verbose=verbose,
+                ),
+                EarlyStopping(
+                    monitor='val_loss',
+                    patience=10,
+                    restore_best_weights=True,
+                    # Use min_delta 0 since we don't know the right units to detect improvement
+                    min_delta=0,  # type: ignore
+                    verbose=verbose
+                ),
+                ReduceLROnPlateau(
+                    monitor='val_loss',
+                    factor=0.5,        # reduce LR by half
+                    patience=5,        # after 5 epochs without improvement
+                    min_lr=1e-7,
+                    verbose=verbose
+                )
+                ] 
             )
-        ]
         # Normalize the data
         x_train_nrml = self.normalizeImages(x_train)
         x_validation_nrml = self.normalizeImages(validation_data)
@@ -133,7 +154,8 @@ class AbstractAutoencoder(object):
     
     def summarize(self) -> None:
         # Prints a summary of the autoencoder model.
-        self.autoencoder.summary()
+        if self.is_verbose:
+            self.autoencoder.summary()
     
     def predict(self, image_arr: np.ndarray,
             predictor_type: str = "autoencoder") -> np.ndarray:
@@ -206,6 +228,8 @@ class AbstractAutoencoder(object):
             fig.savefig(png_path, dpi=300, bbox_inches="tight")
         if is_plot:
             plt.show()
+        else:
+            plt.close()
 
         # Print compression statistics
         """ print(f"\nOriginal image size: 784 pixels")
@@ -331,7 +355,8 @@ class AbstractAutoencoder(object):
     
     def plotEncoded(self, x_test: np.ndarray, x_label: np.ndarray,
             max_num_point: int= 100,
-            lim: Optional[List[float]] = None) -> None:
+            lim: Optional[List[float]] = None,
+            is_plot: bool = True) -> None:
         """Plots the encoded labels in 2D space. If the encoded
         space has more than 2 dimensions, just uses the first two dimensions
 
@@ -367,7 +392,10 @@ class AbstractAutoencoder(object):
         plt.grid(True)
         str_labels = [str(l) for l in labels]
         plt.legend(str_labels)
-        plt.show()
+        if is_plot:
+            plt.show()
+        else:
+            plt.close()
 
     ExperimentResult = collections.namedtuple('ExperimentResult',
             ['batch_size', 'history', 'base_path', 'context_str'])
@@ -376,6 +404,8 @@ class AbstractAutoencoder(object):
             autoencoder: 'AbstractAutoencoder',
             batch_size: int,
             context_dct: dict,
+            num_epoch: int=MAX_EPOCH,
+            is_verbose: bool = True
             ) -> ExperimentResult:
         """Run an experiment on the animal dataset.
 
@@ -391,9 +421,9 @@ class AbstractAutoencoder(object):
         full_context_dct = dict(context_dct)
         full_context_dct['batch_size'] = batch_size
         full_context_dct['autoencoder'] = str(autoencoder.__class__).split('.')[-1][:-2]
-        x_animals_train, _, x_animals_test, __, __ = util.getPklAnimals()
-        autoencoder.fit(x_animals_train, num_epoch=MAX_EPOCH, batch_size=batch_size,
-                validation_data=x_animals_test, verbose=1)
+        x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals(is_verbose=is_verbose)
+        autoencoder.fit(x_animals_train, num_epoch=num_epoch, batch_size=batch_size,
+                validation_data=x_animals_test, is_verbose=is_verbose)
         base_path = os.path.join(autoencoder.base_path, "animals_" + str(full_context_dct))
         for char in "'{}[] ":
             base_path = base_path.replace(char, "")
@@ -408,3 +438,12 @@ class AbstractAutoencoder(object):
                 base_path=base_path,
                 history=autoencoder.history_dct,
                 context_str=util.dictToStr(autoencoder.context_dct()))
+    
+    def print(self, message: str):
+        """Prints a message with the class name as prefix.
+
+        Args:
+            message (str): Message to print.
+        """
+        if self.is_verbose:
+            print(f"[{self.__class__.__name__}] {message}")

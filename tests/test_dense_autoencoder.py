@@ -4,14 +4,16 @@ from dense_autoencoder import DenseAutoencoder  # type: ignore
 import src.util as util  # type: ignore
 
 import numpy as np
-import os
 
 
-IGNORE_TEST = True
+IGNORE_TEST = False
 IS_PLOT = False
 X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST, CLASS_NAMES = util.getPklMNIST()
-#X_TRAIN = np.reshape(X_TRAIN, (np.shape(X_TRAIN)[0], 28, 28))
-#X_TEST = np.reshape(X_TEST, (np.shape(X_TEST)[0], 28, 28))
+NUM_EPOCH = 2
+if IGNORE_TEST:
+    VERBOSE = 1
+else:
+    VERBOSE = 0
 
 
 #############################
@@ -51,21 +53,22 @@ class TestDeterministicAutoencoder(unittest.TestCase):
                     self.assertAlmostEqual(arr[i][j][k], unflat[i][j][k], places=5)
 
     def testFitPlot(self):
-        #if IGNORE_TEST:
-        #    return
+        if IGNORE_TEST:
+            return
         encode_dims = [784, 128, 64, 32]
         encode_dims = [784, 256, 128, 16]
         dae = DenseAutoencoder(encode_dims, is_delete_serializations=True)
-        dae.fit(X_TRAIN, num_epoch=1000, batch_size=128, validation_data=X_TEST, verbose=1)
+        dae.fit(X_TRAIN, num_epoch=NUM_EPOCH, batch_size=128, validation_data=X_TEST, is_verbose=IGNORE_TEST)
         dae.summarize()
-        dae.plot(X_TEST)
+        dae.plot(X_TEST, is_plot=IS_PLOT)
         self.assertIn('loss', dae.history_dct)
         self.assertIn('val_loss', dae.history_dct)
 
     def testDoAnimalExperiments(self):
         if IGNORE_TEST:
             return
-        DenseAutoencoder.doAnimalExperiments(encode_dims=[96*96*3, 512, 128, 64], batch_size=128)
+        DenseAutoencoder.doAnimalExperiments(encode_dims=[96*96*3, 512, 128, 64], batch_size=128,
+                num_epoch=NUM_EPOCH, base_path=cn.TEST_DIR)
 
 if __name__ == '__main__':
     unittest.main()

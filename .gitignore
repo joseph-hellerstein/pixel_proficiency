@@ -3,6 +3,8 @@ tests/*.csv
 __pycache__/
 *.py[codz]
 *$py.class
+*.pkl
+data/
 
 # C extensions
 *.so

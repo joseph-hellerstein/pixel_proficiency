@@ -1,5 +1,6 @@
 jupyterlab
 matplotlib
+nose2
 numpy
 pandas
 scikit-learn
