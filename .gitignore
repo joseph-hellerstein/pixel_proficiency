@@ -5,6 +5,7 @@ __pycache__/
 *$py.class
 *.pkl
 data/
+tests/*_autoencoder-*
 
 # C extensions
 *.so

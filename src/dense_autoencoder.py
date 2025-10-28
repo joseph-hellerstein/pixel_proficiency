@@ -174,7 +174,8 @@ class DenseAutoencoder(AbstractAutoencoder):
 
     @classmethod
     def doAnimalExperiments(cls, encode_dims: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
-            num_epoch: int=MAX_EPOCH):
+            num_epoch: int=MAX_EPOCH, is_verbose: bool = False,
+            is_stopping_early: bool = True) -> None:
         dae = cls(encode_dims, is_delete_serializations=True,
-                base_path=base_path)
+                base_path=base_path, is_early_stropping=is_stopping_early, is_verbose=is_verbose)
         cls.runAnimalExperiment(dae, batch_size, dae.context_dct(), num_epoch=num_epoch)

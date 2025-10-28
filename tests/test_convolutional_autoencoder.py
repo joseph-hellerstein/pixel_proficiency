@@ -113,7 +113,8 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         filter_sizes = [64, 32, 8]
         ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=filter_sizes, batch_size=128,
-                base_path=cn.TEST_DIR, num_epoch=NUM_EPOCH)
+                base_path=cn.TEST_DIR, num_epoch=NUM_EPOCH,
+                is_stopping_early=True, is_verbose=IGNORE_TEST)
         ffiles = os.listdir(cn.TEST_DIR)
         true = any(["animals_" in f for f in ffiles])
         self.assertTrue(true)

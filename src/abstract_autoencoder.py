@@ -405,13 +405,14 @@ class AbstractAutoencoder(object):
             batch_size: int,
             context_dct: dict,
             num_epoch: int=MAX_EPOCH,
-            is_verbose: bool = True
             ) -> ExperimentResult:
         """Run an experiment on the animal dataset.
 
         Args:
             autoencoder (AbstractAutoencoder): The autoencoder to use.
             batch_size (int): The batch size to use for training.
+            context_dct (dict): Context dictionary describing the experiment.
+            num_epoch (int, optional): Number of epochs to train. Defaults to MAX_EPOCH.
 
         Returns:
             ExperimentResult: The result of the experiment.
@@ -421,9 +422,9 @@ class AbstractAutoencoder(object):
         full_context_dct = dict(context_dct)
         full_context_dct['batch_size'] = batch_size
         full_context_dct['autoencoder'] = str(autoencoder.__class__).split('.')[-1][:-2]
-        x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals(is_verbose=is_verbose)
+        x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals(is_verbose=autoencoder.is_verbose)
         autoencoder.fit(x_animals_train, num_epoch=num_epoch, batch_size=batch_size,
-                validation_data=x_animals_test, is_verbose=is_verbose)
+                validation_data=x_animals_test)
         base_path = os.path.join(autoencoder.base_path, "animals_" + str(full_context_dct))
         for char in "'{}[] ":
             base_path = base_path.replace(char, "")

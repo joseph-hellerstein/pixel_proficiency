@@ -134,7 +134,8 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
 
     @classmethod 
     def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
-            num_epoch: int=1000):
+            num_epoch: int=1000, is_stopping_early: bool = True, is_verbose: bool = False) -> None:
         cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=True,
-                base_path=base_path)
+                base_path=base_path, is_early_stopping=is_stopping_early,
+                is_verbose=is_verbose)
         cls.runAnimalExperiment(cae, batch_size, cae.context_dct(), num_epoch=num_epoch)
