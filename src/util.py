@@ -117,7 +117,7 @@ def getPklAnimals(is_verbose: bool = False) -> TrainTestData:
         TrainTestData: A named tuple containing training and test data and labels.
     """
     ##
-    data_dir = "/Users/jlheller/home/Technical/repos/pixel_proficiency/data/animals"
+    data_dir = os.path.join(cn.DATA_DIR, 'animals')
     def getData(data_type: str) -> Tuple[np.ndarray, np.ndarray, List[str]]:
         dataset = datasets.STL10(root=data_dir, split=data_type, download=True)
         class_names = dataset.classes  # List of class names
