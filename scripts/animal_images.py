@@ -11,22 +11,23 @@ if True:
                 print("***")
                 print(f"***Dense Autoencoder Animal Experiments: {encode_dims}")
                 print("***")
-                DenseAutoencoder.doAnimalExperiments(encode_dims=encode_dims, batch_size=128, is_stopping_early=False,
+                DenseAutoencoder.doAnimalExperiments(encode_dims=encode_dims, batch_size=128, is_stopping_early=True,
                         is_verbose=True)
 # Convolutional autoencoders
-filter_sizes_list = [
-        [256, 128, 64],
-        [256, 128, 32],
-        [256, 64, 32],
-        [256, 64, 16],
-        [128, 64, 32],
-        [128, 64, 16],
-        [128, 32, 16],
-        ]
-for filter_sizes in filter_sizes_list:
-        print("***")
-        print(f"***Convolutional Autoencoder Animal Experiments: {filter_sizes}")
-        print("***")
-        ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=filter_sizes, batch_size=128,
-                is_stopping_early=True,
-                is_verbose=True)
+if False:
+    filter_sizes_list = [
+            [256, 128, 64],
+            [256, 128, 32],
+            [256, 64, 32],
+            [256, 64, 16],
+            [128, 64, 32],
+            [128, 64, 16],
+            [128, 32, 16],
+            ]
+    for filter_sizes in filter_sizes_list:
+            print("***")
+            print(f"***Convolutional Autoencoder Animal Experiments: {filter_sizes}")
+            print("***")
+            ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=filter_sizes, batch_size=128,
+                    is_stopping_early=True,
+                    is_verbose=True)

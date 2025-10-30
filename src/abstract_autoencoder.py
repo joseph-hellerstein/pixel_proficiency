@@ -109,7 +109,15 @@ class AbstractAutoencoder(object):
             print("Model is already fit. Skipping training.")
             return
         # Create a ModelCheckpoint callback
-        callbacks: list = []
+        callbacks: list = [
+            ReduceLROnPlateau(
+                    monitor='val_loss',
+                    factor=0.5,        # reduce LR by half
+                    patience=5,        # after 5 epochs without improvement
+                    min_lr=1e-7,
+                    verbose=verbose
+                )
+        ]
         if self.is_early_stopping:
             callbacks.extend(
                 [ModelCheckpoint(
@@ -127,13 +135,6 @@ class AbstractAutoencoder(object):
                     min_delta=0,  # type: ignore
                     verbose=verbose
                 ),
-                ReduceLROnPlateau(
-                    monitor='val_loss',
-                    factor=0.5,        # reduce LR by half
-                    patience=5,        # after 5 epochs without improvement
-                    min_lr=1e-7,
-                    verbose=verbose
-                )
                 ] 
             )
         # Normalize the data
@@ -382,7 +383,7 @@ class AbstractAutoencoder(object):
         plt.figure(figsize=(8, 6))
         for label in labels:
             mask = (x_label == label)
-            plt.scatter(encoded_arr[mask, 0], encoded_arr[mask, 1], c=colors[label])
+            plt.scatter(encoded_arr[mask, 0], encoded_arr[mask, 1], color=colors[label])
         if lim is not None:
             plt.ylim(lim)
             plt.xlim(lim)

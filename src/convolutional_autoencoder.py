@@ -19,13 +19,15 @@ from typing import List, Tuple, Union, Any
 
 class ConvolutionalAutoencoder(AbstractAutoencoder):
 
-    def __init__(self, image_shape: Union[Tuple[int], List[int]],
+    def __init__(self,
+            image_shape: Union[Tuple[int], List[int]],
             filter_sizes: List[int] = [32, 64, 128, 32],
             base_path: str=cn.MODEL_DIR,
             is_delete_serializations: bool=True,
             activation: str='sigmoid',
             is_early_stopping: bool = True,
-            is_verbose: bool = False):
+            is_verbose: bool = False,
+            dropout_rate: float = 0.4):
         """Initializes the convolutional autoencoder.
 
         Args:
@@ -34,7 +36,9 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             base_path (str, optional): Base path for model serialization. Defaults to BASE_PATH.
             is_delete_serializations (bool, optional): Whether to delete existing serializations. Defaults to
             activation (str, optional): Activation function to use in the layers. Defaults to 'sigmoid'.
-            is_early_stropping (bool, optional): Whether to use early stopping during training. Defaults to True.
+            is_early_stopping (bool, optional): Whether to use early stopping during training. Defaults to True.
+            is_verbose (bool, optional): Whether to print verbose output during training. Defaults to False.
+            dropout_rate (float, optional): Dropout rate to use in the layers. Defaults to 0.4.
         """
         if len(image_shape) < 2 or len(image_shape) > 3:
             raise ValueError("image_shape must be of length 2 or 3")
@@ -45,6 +49,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             raise ValueError("filter_sizes must have at least one element")
         self.filter_sizes = filter_sizes
         self.image_size = np.prod(image_shape)
+        self.dropout_rate = dropout_rate
         super().__init__(base_path=base_path, is_delete_serializations=is_delete_serializations,
                 activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose)
 
@@ -54,6 +59,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             'image_shape': self.image_shape,
             'filter_sizes': self.filter_sizes,
             'activation': self.activation,
+            'dropout_rate': self.dropout_rate,
         }
         return context_dct
 
@@ -78,6 +84,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             else:
                 input = encoded
             encoded = layers.Conv2D(filter_size, (3, 3), activation=self.activation, padding='same')(input)
+            layers.Dropout(self.dropout_rate)
             if idx < len(self.filter_sizes) - 1:
                 encoded = layers.MaxPooling2D((2, 2), padding='same')(encoded)
         # Upsampling
@@ -90,6 +97,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
                 input = decoded
             decoded = layers.Conv2DTranspose(filter_size, (3, 3), strides=(2, 2), activation=self.activation,
                     padding='same')(input)
+            layers.Dropout(self.dropout_rate)
         decoded = layers.Conv2D(self.image_shape[-1], (3, 3), activation=self.activation, padding='same')(decoded)
         # Create and compile the models
         encoder = keras.Model(input_img, encoded, name="encoder")

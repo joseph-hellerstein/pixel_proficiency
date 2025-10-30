@@ -1,51 +1,52 @@
 # Defines a dense autoencoder using TensorFlow/Keras to
-# compress and reconstruct images from the MNIST dataset.
 
-"""
-Issues
-1. Losses are much higher than in notebook
-"""
 
 from src.abstract_autoencoder import AbstractAutoencoder  # type: ignore
 
-import matplotlib.pyplot as plt#  type: ignore
-import numpy as np#  type: ignore
+import matplotlib.pyplot as plt  #  type: ignore
+import numpy as np     # type: ignore
 import src.constants as cn  # type: ignore
-import os
-import pandas as pd#  type: ignore
-from tensorflow import keras #  type: ignore
-from tensorflow.keras.datasets import mnist   # type: ignore
+from tensorflow import keras  #  type: ignore
 from typing import Tuple, List, Optional
 
 MAX_EPOCH = 1000
 
+# FIXME: Constructor uses image_shape so can use flatten and reshape. Should abstract know image shape?
+# Should encode dimensions exclude the input dimension?
 
 class DenseAutoencoder(AbstractAutoencoder):
-    def __init__(self, encode_dims: List[int], base_path: str=cn.MODEL_DIR,
+    def __init__(self,
+            encode_dims: List[int],
+            base_path: str=cn.MODEL_DIR,
             is_delete_serializations: bool=True,
             activation: str='sigmoid',
-            is_early_stropping: bool = True,
-            is_verbose: bool = False):
-        """Initializes the dense autoencoder.
+            is_early_stopping: bool = True,
+            is_verbose: bool = False,
+            dropout_rate: float = 0.4):
+        """Initialize the dense autoencoder.
 
         Args:
             encode_dims (List[int]): List of integers representing the dimensions of the encoding layers.
                     The first element is the input dimension, and the last element is the bottleneck dimension.  
             base_path (str, optional): Base path for model serialization. Defaults to BASE_PATH.
             is_delete_serializations (bool, optional): Whether to delete existing serializations. Defaults to True.
-            activation (str, optional): Activation function to use in the layers. Defaults to '
+            activation (str, optional): Activation function to use in the layers. Defaults to 'sigmoid'.
             is_early_stopping (bool, optional): Whether to use early stopping during training. Defaults to True.
+            is_verbose (bool, optional): Whether to print verbose output during training. Defaults to False.
+            dropout_rate (float, optional): Dropout rate to use in the layers. Defaults to 0.4.
         """
         self.encode_dims = encode_dims
         self.num_hidden_layer = len(encode_dims) - 1
+        self.dropout_rate = dropout_rate
         super().__init__(base_path=base_path, is_delete_serializations=is_delete_serializations,
-                activation=activation, is_early_stopping=is_early_stropping, is_verbose=is_verbose)
+                activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose)
 
     def context_dct(self) -> dict:
         # Describes the parameters used to build the model.
         context_dct = {
             'encode_dims': self.encode_dims,
             'activation': self.activation,
+            'dropout_rate': self.dropout_rate,
         }
         return context_dct
 
@@ -64,8 +65,10 @@ class DenseAutoencoder(AbstractAutoencoder):
         for idx in range(self.num_hidden_layer):
             if idx == 0:
                 encoded = layers.Dense(self.encode_dims[1], activation=self.activation)(input_img) # type: ignore
+                layers.Dropout(self.dropout_rate)
             else:
                 encoded = layers.Dense(self.encode_dims[idx+1], activation=self.activation)(encoded) # type: ignore
+                layers.Dropout(self.dropout_rate)
         # Decoder
         decode_dims = list(self.encode_dims)
         decode_dims.reverse()
@@ -73,8 +76,10 @@ class DenseAutoencoder(AbstractAutoencoder):
         for idx in range(self.num_hidden_layer):
             if idx == 0:
                 decoded = layers.Dense(decode_dims[1], activation=self.activation)(encoded) # type: ignore
+                layers.Dropout(self.dropout_rate)
             else:
                 decoded = layers.Dense(decode_dims[idx+1], activation=self.activation)(decoded) # type: ignore
+                layers.Dropout(self.dropout_rate)
         # Create the autoencoder model
         autoencoder = keras.Model(input_img, decoded)
         # Create encoder model (for extracting encoded representations)
@@ -177,5 +182,5 @@ class DenseAutoencoder(AbstractAutoencoder):
             num_epoch: int=MAX_EPOCH, is_verbose: bool = True,
             is_stopping_early: bool = True) -> None:
         dae = cls(encode_dims, is_delete_serializations=True,
-                base_path=base_path, is_early_stropping=is_stopping_early, is_verbose=is_verbose)
+                base_path=base_path, is_early_stopping=is_stopping_early, is_verbose=is_verbose)
         cls.runAnimalExperiment(dae, batch_size, dae.context_dct(), num_epoch=num_epoch)
