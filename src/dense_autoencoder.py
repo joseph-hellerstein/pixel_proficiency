@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt  #  type: ignore
 import numpy as np     # type: ignore
 import src.constants as cn  # type: ignore
 from tensorflow import keras  #  type: ignore
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union
 
 MAX_EPOCH = 1000
 
@@ -16,6 +16,7 @@ MAX_EPOCH = 1000
 
 class DenseAutoencoder(AbstractAutoencoder):
     def __init__(self,
+            image_shape: Union[Tuple[int], List[int]],
             encode_dims: List[int],
             base_path: str=cn.MODEL_DIR,
             is_delete_serializations: bool=True,
@@ -26,8 +27,9 @@ class DenseAutoencoder(AbstractAutoencoder):
         """Initialize the dense autoencoder.
 
         Args:
+            image_shape (Union[Tuple[int], List[int]]): Shape of the input images (height, width, channels)
             encode_dims (List[int]): List of integers representing the dimensions of the encoding layers.
-                    The first element is the input dimension, and the last element is the bottleneck dimension.  
+                If the first element does not match the flattened image size, it will be prepended.
             base_path (str, optional): Base path for model serialization. Defaults to BASE_PATH.
             is_delete_serializations (bool, optional): Whether to delete existing serializations. Defaults to True.
             activation (str, optional): Activation function to use in the layers. Defaults to 'sigmoid'.
@@ -35,7 +37,11 @@ class DenseAutoencoder(AbstractAutoencoder):
             is_verbose (bool, optional): Whether to print verbose output during training. Defaults to False.
             dropout_rate (float, optional): Dropout rate to use in the layers. Defaults to 0.4.
         """
+        self.image_shape = image_shape
         self.encode_dims = encode_dims
+        first_dim = int(np.prod(image_shape))
+        if encode_dims[0] != first_dim:
+            encode_dims.insert(0, first_dim)
         self.num_hidden_layer = len(encode_dims) - 1
         self.dropout_rate = dropout_rate
         super().__init__(base_path=base_path, is_delete_serializations=is_delete_serializations,
@@ -59,16 +65,12 @@ class DenseAutoencoder(AbstractAutoencoder):
         # Keep this here since layers is also used as a variable name below
         from tensorflow.keras import layers #  type: ignore
         # Input layer
-        input_img = keras.Input(shape=(self.encode_dims[0],))
+        input_img = keras.Input(shape=self.image_shape, name="input_layer")
+        encoded = layers.Flatten()(input_img)
         # Encoder
-        encoded = None
         for idx in range(self.num_hidden_layer):
-            if idx == 0:
-                encoded = layers.Dense(self.encode_dims[1], activation=self.activation)(input_img) # type: ignore
-                layers.Dropout(self.dropout_rate)
-            else:
-                encoded = layers.Dense(self.encode_dims[idx+1], activation=self.activation)(encoded) # type: ignore
-                layers.Dropout(self.dropout_rate)
+            encoded = layers.Dense(self.encode_dims[idx+1], activation=self.activation)(encoded) # type: ignore
+            encoded = layers.Dropout(self.dropout_rate)(encoded)
         # Decoder
         decode_dims = list(self.encode_dims)
         decode_dims.reverse()
@@ -80,52 +82,24 @@ class DenseAutoencoder(AbstractAutoencoder):
             else:
                 decoded = layers.Dense(decode_dims[idx+1], activation=self.activation)(decoded) # type: ignore
                 layers.Dropout(self.dropout_rate)
+        decoded = layers.Reshape(self.image_shape)(decoded)
         # Create the autoencoder model
         autoencoder = keras.Model(input_img, decoded)
         # Create encoder model (for extracting encoded representations)
         encoder = keras.Model(input_img, encoded)
         # Create the decoder model
-        encoded_input = keras.Input(shape=(self.encode_dims[-1],))
-        layers = []
-        for idim in range(self.num_hidden_layer, 1, -1):
-            layers.append(autoencoder.layers[-idim])
-        decoder_layers = list(autoencoder.layers)[-(self.num_hidden_layer):]
-        decoder_layer = encoded_input
-        for layer in decoder_layers:
-            decoder_layer = layer(decoder_layer)
-        # Create decoder model
-        decoder = keras.Model(encoded_input, decoder_layer)
+        # Create the decoder model by rebuilding layers to match decode_dims
+        encoded_input = keras.Input(shape=(self.encode_dims[-1],), name='encoded input')
+        x = encoded_input
+        # decode_dims is reversed encode_dims; skip the first element (bottleneck) and expand back
+        for units in decode_dims[1:]:
+            x = layers.Dense(units, activation=self.activation)(x)
+            x = layers.Dropout(self.dropout_rate)(x)
+        x = layers.Reshape(self.image_shape)(x)
+        decoder = keras.Model(encoded_input, x)
         # Compile the autoencoder
         autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
         return autoencoder, encoder, decoder, {}
-
-    def _flatten(self, arr: np.ndarray) -> np.ndarray:
-        """Flattens the input images.
-        Args:
-            x (np.ndarray): Input images (not flattened)
-
-        Returns:
-            np.ndarray: Flattened images
-        """
-        self.image_shape = np.shape(arr[0])
-        size = np.prod(self.image_shape)
-        num_image = np.shape(arr)[0]
-        x_flat = arr.reshape(num_image, size).astype('float32')
-        return x_flat
-    
-    def _unflatten(self, arr: np.ndarray) -> np.ndarray:
-        """Flattens the input images.
-        Args:
-            x (np.ndarray): Input images (not flattened)
-
-        Returns:
-            np.ndarray: Flattened images
-        """
-        result_shape = np.zeros(len(self.image_shape) + 1)
-        result_shape[0] = np.shape(arr)[0]
-        result_shape[1:] = self.image_shape
-        result = np.reshape(arr, result_shape.astype(int))
-        return result
 
     def fit(self, 
             x_train: np.ndarray,
@@ -144,12 +118,12 @@ class DenseAutoencoder(AbstractAutoencoder):
         if is_verbose is None:
             is_verbose = self.is_verbose
         # Flatten each image to a vector
-        x_flat = self._flatten(x_train)
-        test_flat = self._flatten(validation_data)
-        super().fit(x_flat, num_epoch, batch_size, test_flat, is_verbose=is_verbose)
+        #x_flat = self._flatten(x_train)
+        #test_flat = self._flatten(validation_data)
+        super().fit(x_train, num_epoch, batch_size, validation_data, is_verbose=is_verbose)
 
     
-    def predict(self, image_arr: np.ndarray,
+    def oldpredict(self, image_arr: np.ndarray,
                 predictor_type: str = "autoencoder") -> np.ndarray:
         """Generates reconstructed images from the autoencoder.
 
@@ -181,6 +155,6 @@ class DenseAutoencoder(AbstractAutoencoder):
     def doAnimalExperiments(cls, encode_dims: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
             num_epoch: int=MAX_EPOCH, is_verbose: bool = True,
             is_stopping_early: bool = True) -> None:
-        dae = cls(encode_dims, is_delete_serializations=True,
+        dae = cls(cn.ANIMALS_IMAGE_SHAPE, encode_dims, is_delete_serializations=True,
                 base_path=base_path, is_early_stopping=is_stopping_early, is_verbose=is_verbose)
         cls.runAnimalExperiment(dae, batch_size, dae.context_dct(), num_epoch=num_epoch)

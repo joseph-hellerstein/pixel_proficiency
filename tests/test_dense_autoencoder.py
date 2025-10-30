@@ -27,37 +27,22 @@ class TestDeterministicAutoencoder(unittest.TestCase):
     def testConstructor(self):
         if IGNORE_TEST:
             return
-        encode_dims = [784, 128, 64, 32]
-        dae = DenseAutoencoder(encode_dims)
+        encode_dims = [96*96*3, 128, 64, 32]
+        dae = DenseAutoencoder(cn.ANIMALS_IMAGE_SHAPE, encode_dims)
         self.assertEqual(dae.encode_dims, encode_dims)
         self.assertEqual(dae.num_hidden_layer, 3)
-        self.assertEqual(dae.compression_factor, 784/32)
+        self.assertEqual(dae.compression_factor, (96*96*3)/32)
         self.assertIsNotNone(dae.autoencoder)
         self.assertIsNotNone(dae.encoder)
         self.assertIsNotNone(dae.decoder)
         self.assertEqual(len(dae.history_dct), 0)
 
-    def testFlattenUnflatten(self):
-        if IGNORE_TEST:
-            return
-        encode_dims = [784, 128, 64, 32]
-        dae = DenseAutoencoder(encode_dims)
-        arr = X_TRAIN[0:10]
-        flat = dae._flatten(arr)
-        self.assertEqual(flat.shape, (10, 784))
-        unflat = dae._unflatten(flat)
-        self.assertEqual(unflat.shape, (10, 28, 28))
-        for i in range(10):
-            for j in range(28):
-                for k in range(28):
-                    self.assertAlmostEqual(arr[i][j][k], unflat[i][j][k], places=5)
-
     def testFitPlot(self):
         if IGNORE_TEST:
             return
-        encode_dims = [784, 128, 64, 32]
-        encode_dims = [784, 256, 128, 16]
-        dae = DenseAutoencoder(encode_dims, is_delete_serializations=True)
+        encode_dims = [256, 128, 16]
+        dae = DenseAutoencoder(cn.MNIST_IMAGE_SHAPE, encode_dims,
+                is_delete_serializations=True, is_verbose=IGNORE_TEST)
         dae.fit(X_TRAIN, num_epoch=NUM_EPOCH, batch_size=128, validation_data=X_TEST, is_verbose=IGNORE_TEST)
         dae.summarize()
         dae.plot(X_TEST, is_plot=IS_PLOT)
