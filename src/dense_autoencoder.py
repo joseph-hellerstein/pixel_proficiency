@@ -122,29 +122,6 @@ class DenseAutoencoder(AbstractAutoencoder):
         #test_flat = self._flatten(validation_data)
         super().fit(x_train, num_epoch, batch_size, validation_data, is_verbose=is_verbose)
 
-    
-    def oldpredict(self, image_arr: np.ndarray,
-                predictor_type: str = "autoencoder") -> np.ndarray:
-        """Generates reconstructed images from the autoencoder.
-
-        Args:
-            image_arr (np.ndarray): array of images
-            predictor_type (str, optional):
-                Type of predictor to use: "autoencoder", "encoder", or "decoder".
-                Defaults to "autoencoder".
-
-        Returns:
-            np.ndarray: array of reconstructed images
-        """
-        if predictor_type in ["autoencoder", "encoder"]:
-            image_arr = self._flatten(image_arr)
-        predicted_arr = super().predict(image_arr, predictor_type=predictor_type)
-        if predictor_type in ["autoencoder", "decoder"]:
-            reconstructed_arr = self._unflatten(predicted_arr)
-        else:
-            reconstructed_arr = predicted_arr
-        return reconstructed_arr
-    
     @property
     def compression_factor(self) -> float:
         # Calculates the ratio between the original image size and the bottleneck size.
