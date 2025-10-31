@@ -1,19 +1,10 @@
 '''Autoencoder that uses convolutional layers for autoencoding images. Images are 2D with a channel dimension.'''
 
-import src.constants as cn  # type: ignore
-import src.util as util  # type: ignore
 from src.abstract_autoencoder import AbstractAutoencoder  # type: ignore
 
-from collections import namedtuple
 import numpy as np
-import matplotlib.pyplot as plt
 from tensorflow import keras # type: ignore
 from tensorflow.keras import layers # type: ignore
-from tensorflow.keras.datasets import mnist  # type: ignore
-from sklearn.decomposition import PCA # type:ignore
-from sklearn.preprocessing import StandardScaler # type:ignore
-import pandas as pd # type: ignore
-import os
 from typing import List, Tuple, Union, Any
 
 

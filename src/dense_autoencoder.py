@@ -11,8 +11,6 @@ from typing import Tuple, List, Optional, Union
 
 MAX_EPOCH = 1000
 
-# FIXME: Constructor uses image_shape so can use flatten and reshape. Should abstract know image shape?
-# Should encode dimensions exclude the input dimension?
 
 class DenseAutoencoder(AbstractAutoencoder):
     def __init__(self,
@@ -100,27 +98,6 @@ class DenseAutoencoder(AbstractAutoencoder):
         # Compile the autoencoder
         autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
         return autoencoder, encoder, decoder, {}
-
-    def fit(self, 
-            x_train: np.ndarray,
-            num_epoch: int,
-            batch_size: int,
-            validation_data: np.ndarray,
-            is_verbose: Optional[bool]=None) -> None:
-        """Trains the autoencoder.
-        Args:
-            x_train (np.ndarray): Training data (not flattened)
-            num_epoch (int): Number of training epochs
-            batch_size (int): Size of training batches
-            validation_data (np.ndarray): Validation data (not flattened)
-            verbose (int, optional): Verbosity level. Defaults to 1.
-        """
-        if is_verbose is None:
-            is_verbose = self.is_verbose
-        # Flatten each image to a vector
-        #x_flat = self._flatten(x_train)
-        #test_flat = self._flatten(validation_data)
-        super().fit(x_train, num_epoch, batch_size, validation_data, is_verbose=is_verbose)
 
     @property
     def compression_factor(self) -> float:
