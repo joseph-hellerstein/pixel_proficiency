@@ -11,7 +11,7 @@ if True:
                 print("***")
                 print(f"***Dense Autoencoder Animal Experiments: {encode_dims}")
                 print("***")
-                DenseAutoencoder.doAnimalExperiments(encode_dims=encode_dims, batch_size=128, is_stopping_early=True,
+                DenseAutoencoder.doAnimalExperiments(encode_dims=encode_dims, batch_size=128, is_early_stopping=True,
                         is_verbose=True)
 # Convolutional autoencoders
 if False:

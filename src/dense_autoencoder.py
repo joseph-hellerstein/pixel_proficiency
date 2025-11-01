@@ -14,10 +14,10 @@ MAX_EPOCH = 1000
 
 class DenseAutoencoder(AbstractAutoencoder):
     def __init__(self,
-            image_shape: Union[Tuple[int], List[int]],
-            encode_dims: List[int],
+            image_shape: Optional[Union[Tuple[int], List[int]]]=None,
+            encode_dims: Optional[List[int]]=None,
             base_path: str=cn.MODEL_DIR,
-            is_delete_serializations: bool=True,
+            is_delete_serialization: bool=True,
             activation: str='sigmoid',
             is_early_stopping: bool = True,
             is_verbose: bool = False,
@@ -35,15 +35,19 @@ class DenseAutoencoder(AbstractAutoencoder):
             is_verbose (bool, optional): Whether to print verbose output during training. Defaults to False.
             dropout_rate (float, optional): Dropout rate to use in the layers. Defaults to 0.4.
         """
-        self.image_shape = image_shape
+        # Check for null constructor for deserialization
+        if image_shape is None or encode_dims is None:
+            return
+        # State specific to DenseAutoencoder
         self.encode_dims = encode_dims
+        #
         first_dim = int(np.prod(image_shape))
         if encode_dims[0] != first_dim:
             encode_dims.insert(0, first_dim)
         self.num_hidden_layer = len(encode_dims) - 1
-        self.dropout_rate = dropout_rate
-        super().__init__(base_path=base_path, is_delete_serializations=is_delete_serializations,
-                activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose)
+        super().__init__(image_shape, base_path=base_path, is_delete_serialization=is_delete_serialization,
+                activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose,
+                dropout_rate=dropout_rate)
 
     def context_dct(self) -> dict:
         # Describes the parameters used to build the model.
@@ -108,7 +112,23 @@ class DenseAutoencoder(AbstractAutoencoder):
     @classmethod
     def doAnimalExperiments(cls, encode_dims: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
             num_epoch: int=MAX_EPOCH, is_verbose: bool = True,
-            is_stopping_early: bool = True) -> None:
-        dae = cls(cn.ANIMALS_IMAGE_SHAPE, encode_dims, is_delete_serializations=True,
-                base_path=base_path, is_early_stopping=is_stopping_early, is_verbose=is_verbose)
+            is_early_stopping: bool = True) -> None:
+        dae = cls(cn.ANIMALS_IMAGE_SHAPE, encode_dims, is_delete_serialization=True,
+                base_path=base_path, is_early_stopping=is_early_stopping, is_verbose=is_verbose)
         cls.runAnimalExperiment(dae, batch_size, dae.context_dct(), num_epoch=num_epoch)
+
+    def serialize(self, base_path: Optional[str] = None, **kwargs) -> None:
+        """Serializes the model and training history
+
+        Args:
+            base_path (str): Path to save the model.
+        """
+        if len(kwargs) > 0:
+            raise ValueError("DenseAutoencoder.serialize does not accept additional keyword arguments.")
+        super().serialize(
+            base_path=base_path,
+            image_shape=self.image_shape,
+            encode_dims=self.encode_dims,
+            is_delete_serialization=self.is_delete_serialization,
+            dropout_rate=self.dropout_rate
+        )

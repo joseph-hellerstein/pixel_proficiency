@@ -11,11 +11,11 @@ IS_PLOT = False
 IMAGE_SHAPE = [28,28,1]
 FILTER_SIZES = [64, 8, 1]
 # Prepare the data
-X_TRAIN, LABEL_TRAIN, X_TEST, LABEL_TEST, CLASS_NAMES = util.getPklMNIST()
+X_MNIST_TRAIN, LABEL_MNIST_TRAIN, X_MNIST_TEST, LABEL_MNIST_TEST, CLASS_MNIST_NAMES = util.getPklMNIST()
 X_ANIMALS_TRAIN, LABEL_ANIMALS_TRAIN, X_ANIMALS_TEST, LABEL_ANIMALS_TEST, CLASS_ANIMALS_NAMES = util.getPklAnimals()
 # Reshape to add channel dimension (28, 28, 1) for CNN
-X_TRAIN = np.expand_dims(X_TRAIN, -1)
-X_TEST = np.expand_dims(X_TEST, -1)
+X_MNIST_TRAIN = np.expand_dims(X_MNIST_TRAIN, -1)
+X_MNIST_TEST = np.expand_dims(X_MNIST_TEST, -1)
 if IGNORE_TEST:
     VERBOSE = 1
 else:
@@ -47,9 +47,9 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         if IGNORE_TEST or not IS_PLOT:
             return
         self.cae.summarize()
-        self.cae.fit(X_TRAIN, num_epoch=NUM_EPOCH, batch_size=512, validation_data=X_TEST,
+        self.cae.fit(X_MNIST_TRAIN, num_epoch=NUM_EPOCH, batch_size=512, validation_data=X_MNIST_TEST,
                 is_verbose=IGNORE_TEST)
-        self.cae.plot(X_TEST, is_plot=IS_PLOT)
+        self.cae.plot(X_MNIST_TEST, is_plot=IS_PLOT)
         self.assertIsNotNone(self.cae.history)
         self.assertIn('loss', self.cae.history.history)
         print(f"Compression factor: {self.cae.compression_factor}")
@@ -57,7 +57,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         cae2 = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 filter_sizes=[64, 32, 8],
                 is_delete_serializations=True)
-        cae2.plot(X_TEST, is_plot=IS_PLOT)
+        cae2.plot(X_MNIST_TEST, is_plot=IS_PLOT)
         self.assertIsNotNone(cae2.autoencoder)
         self.assertIsNotNone(cae2.encoder)
         self.assertIsNotNone(cae2.decoder)
@@ -84,9 +84,9 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 filter_sizes=FILTER_SIZES,
                 is_delete_serializations=True)
-        prediction_arr = cae.predict(X_TEST, predictor_type="encoder")
+        prediction_arr = cae.predict(X_MNIST_TEST, predictor_type="encoder")
         x_test = cae.predict(prediction_arr, predictor_type="decoder")
-        cae.plot(x_original_arr=X_TEST, x_predicted_arr=x_test, is_plot=IS_PLOT)
+        cae.plot(x_original_arr=X_MNIST_TEST, x_predicted_arr=x_test, is_plot=IS_PLOT)
 
     def testDecoderEncoder(self):
         if IGNORE_TEST:
@@ -94,11 +94,11 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 filter_sizes=FILTER_SIZES,
                 is_delete_serializations=True)
-        autoencoder_prediction = cae.predict(X_TEST, predictor_type="autoencoder")
-        encoder_prediction = cae.predict(X_TEST, predictor_type="encoder")
+        autoencoder_prediction = cae.predict(X_MNIST_TEST, predictor_type="autoencoder")
+        encoder_prediction = cae.predict(X_MNIST_TEST, predictor_type="encoder")
         decoder_prediction = cae.predict(encoder_prediction, predictor_type="decoder")
-        self.assertTrue(np.all(autoencoder_prediction.shape == X_TEST.shape))
-        self.assertTrue(np.all(decoder_prediction.shape == X_TEST.shape))
+        self.assertTrue(np.all(autoencoder_prediction.shape == X_MNIST_TEST.shape))
+        self.assertTrue(np.all(decoder_prediction.shape == X_MNIST_TEST.shape))
 
     def testPlotEncodedLabels(self):
         if IGNORE_TEST:
@@ -106,7 +106,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 filter_sizes=FILTER_SIZES,
                 is_delete_serializations=True)
-        cae.plotEncoded(X_TEST, LABEL_TEST, max_num_point=300, lim=[-10, 500], is_plot=IS_PLOT)
+        cae.plotEncoded(X_MNIST_TEST, LABEL_MNIST_TEST, max_num_point=300, lim=[-10, 500], is_plot=IS_PLOT)
 
     def testDoAnimalExperiments(self):
         if IGNORE_TEST:
@@ -127,6 +127,18 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         for files in file_list[1:]:
             selected_files = set(selected_files).intersection(set(files))
         self.assertTrue(len(selected_files) > 0)
+    
+    def testSerializeDeserializeContext(self):
+        if IGNORE_TEST:
+            return
+        self.cae.summarize()
+        self.cae.fit(X_MNIST_TRAIN, num_epoch=1, batch_size=512, validation_data=X_MNIST_TEST,
+                is_verbose=IGNORE_TEST)
+        path = os.path.join(cn.TEST_DIR, "cae_test_context")
+        self.cae.serialize(path)
+        cae = ConvolutionalAutoencoder.deserialize(path)
+        cae.plot(X_MNIST_TEST, is_plot=IS_PLOT)
+        self.assertIsNotNone(cae.history_dct)
 
     def testBug(self):
         if IGNORE_TEST:

@@ -1,3 +1,4 @@
+deepdiff
 jupyterlab
 matplotlib
 nose2

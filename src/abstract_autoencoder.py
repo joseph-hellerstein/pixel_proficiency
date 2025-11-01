@@ -3,6 +3,7 @@ import src.constants as cn  # type: ignore
 import src.util as util  # type: ignore
 
 import collections
+from deepdiff import DeepDiff
 import json
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau #  type: ignore
 import matplotlib.pyplot as plt#  type: ignore
@@ -12,17 +13,26 @@ import os
 import pandas as pd#  type: ignore
 from tensorflow import keras #  type: ignore
 from tensorflow.keras.models import load_model # type: ignore
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union
 
 
 MAX_EPOCH = 1000   # Maximum number of epochs for training
+METADATA_FILE = "metadata.json"
+
+DeserializeResult = collections.namedtuple(
+        'DeserializeResult', ['autoencoder', 'encoder', 'decoder', 'history_dct'])
 
 class AbstractAutoencoder(object):
 
-    def __init__(self, base_path: str, is_delete_serializations: bool=True,
+    def __init__(self,
+            image_shape: Union[Tuple[int], List[int]],
+            base_path: str,
+            is_delete_serialization: bool=True,
             activation: str='sigmoid',
             is_early_stopping: bool = True,
-            is_verbose: bool = False):
+            is_verbose: bool = False,
+            dropout_rate: float=0.4,
+            ):
         """Initializes the abstract autoencoder.
         Args:
             base_path (str): Base path for model serialization.
@@ -31,16 +41,20 @@ class AbstractAutoencoder(object):
             is_early_stopping (bool, optional): Whether to use early stopping during training. Defaults to True.
             is_verbose (bool, optional): Whether to print verbose messages. Defaults to True.
         """
+        # Common state for all autoencoders
+        self.image_shape = image_shape
         self.base_path = base_path
+        self.is_delete_serialization = is_delete_serialization
         self.activation = activation
         self.is_early_stopping = is_early_stopping
         self.is_verbose = is_verbose
+        self.dropout_rate = dropout_rate
         #
         self.png_pat = os.path.join(base_path, "%s.png") # pattern for naming plots
         self.autoencoder, self.encoder, self.decoder, self.history_dct =  \
-                self.deserializeAll(base_path=base_path)
+                self._deserializeAllModels(base_path=base_path)
         self.is_fit = False
-        if is_delete_serializations or self.autoencoder is None:
+        if self.is_delete_serialization or self.autoencoder is None:
             self.print("...deleting existing serializations (if any) and rebuilding the model.")
             self.deleteSerializations(base_path=base_path)
             self.autoencoder, self.encoder, self.decoder, self.history_dct =  \
@@ -151,7 +165,7 @@ class AbstractAutoencoder(object):
         )
         self.history_dct = self.history.history
         # Load the best model after training
-        self.serializeAll()
+        self._serializeAllModels()
     
     def summarize(self) -> None:
         # Prints a summary of the autoencoder model.
@@ -240,7 +254,7 @@ class AbstractAutoencoder(object):
         print(f"Final validation loss: {history.history['val_loss'][-1]:.4f}") """
 
     @staticmethod
-    def serializeModel(path: str, model: keras.Model) -> None:
+    def _serializeModel(path: str, model: keras.Model) -> None:
         """Serializes the model
 
         Args:
@@ -250,7 +264,7 @@ class AbstractAutoencoder(object):
         model.save(path)
     
     @staticmethod
-    def deserializeModel(path: str):
+    def _deserializeModel(path: str):
         """Deserializes the model
 
         Args:
@@ -262,7 +276,7 @@ class AbstractAutoencoder(object):
         return model
 
     @staticmethod
-    def deserializeHistory(path: str):
+    def _deserializeHistory(path: str):
         """Deserializes the training history
 
         Args:
@@ -291,7 +305,7 @@ class AbstractAutoencoder(object):
         history_path = f"{base_path}_history.json"
         return autoencoder_path, encoder_path, decoder_path, history_path
 
-    def serializeAll(self, base_path: Optional[str] = None) -> None:
+    def _serializeAllModels(self, base_path: Optional[str] = None) -> None:
         """Serializes the model and training history
 
         Args:
@@ -303,11 +317,82 @@ class AbstractAutoencoder(object):
         #
         autoencoder_path, encoder_path, decoder_path, history_path  = \
                 self._makeSerializationPaths(base_path)
-        self.serializeModel(autoencoder_path, self.autoencoder)
-        self.serializeModel(encoder_path, self.encoder)
-        self.serializeModel(decoder_path, self.decoder)
+        self._serializeModel(autoencoder_path, self.autoencoder)
+        self._serializeModel(encoder_path, self.encoder)
+        self._serializeModel(decoder_path, self.decoder)
         with open(history_path, 'w') as f:
             json.dump(self.history_dct, f)
+    
+    @classmethod
+    def _deserializeAllModels(cls, base_path: str) -> DeserializeResult:
+        """Deserializes the model and training history
+
+        Args:
+            base_path (str): Path to save the model.
+
+        """
+        autoencoder_path, encoder_path, decoder_path, history_path = \
+            cls._makeSerializationPaths(base_path)
+        if not (os.path.exists(autoencoder_path)
+                and os.path.exists(encoder_path)
+                and os.path.exists(decoder_path)
+                and os.path.exists(history_path)):
+            return DeserializeResult(None, None, None, dict())
+        autoencoder = cls._deserializeModel(autoencoder_path)
+        encoder = cls._deserializeModel(encoder_path)
+        decoder = cls._deserializeModel(decoder_path)
+        history_dct = cls._deserializeHistory(history_path)
+        return DeserializeResult(autoencoder, encoder, decoder, history_dct)
+    
+    def serialize(self, base_path: Optional[str] = None, **kwargs) -> None:
+        """Serializes the model and training history
+
+        Args:
+            base_path (str): Path to save the model.
+            kwargs: Additional keyword arguments for serialization.
+
+        """
+        if base_path is None:
+            base_path = self.base_path
+        self._serializeAllModels(base_path=base_path)
+        metadata_path = f"{base_path}_{METADATA_FILE}"
+        metadata_dct = {
+            'image_shape': self.image_shape,
+            'base_path': self.base_path,
+            'is_delete_serialization': self.is_delete_serialization,
+            'activation': self.activation,
+            'is_early_stopping': self.is_early_stopping,
+            'is_verbose': self.is_verbose,
+            'dropout_rate': self.dropout_rate,
+            # computed
+            'png_pat': self.png_pat,
+            'is_fit': self.is_fit,
+        }
+        metadata_dct.update(kwargs)
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata_dct, f)
+
+    @classmethod
+    def deserialize(cls, base_path: str) -> 'AbstractAutoencoder':
+        """Deserializes the model and training history
+
+        Args:
+            base_path (str): Path to save the model.
+
+        """
+        context_path = f"{base_path}_{METADATA_FILE}"
+        if not os.path.exists(context_path):
+            raise ValueError(f"Context file does not exist: {context_path}")
+        with open(context_path, 'r') as f:
+            context_dct = json.load(f)
+        autoencoder = cls()  # type: ignore
+        for key, value in context_dct.items():
+            setattr(autoencoder, key, value)
+        # Models
+        autoencoder.autoencoder, autoencoder.encoder, autoencoder.decoder, autoencoder.history_dct =  \
+                cls._deserializeAllModels(base_path=base_path)
+        # Return
+        return autoencoder
 
     def normalizeImages(self, image_arr: np.ndarray) -> np.ndarray:
         """Normalizes image pixel values to the range [0, 1].
@@ -331,29 +416,6 @@ class AbstractAutoencoder(object):
         """
         return (image_arr * 255.0).astype(np.uint8)
 
-    DeserializeResult = collections.namedtuple(
-        'DeserializeResult', ['autoencoder', 'encoder', 'decoder', 'history_dct'])
-    @classmethod
-    def deserializeAll(cls, base_path: str) -> DeserializeResult:
-        """Deserializes the model and training history
-
-        Args:
-            base_path (str): Path to save the model.
-
-        """
-        autoencoder_path, encoder_path, decoder_path, history_path = \
-            cls._makeSerializationPaths(base_path)
-        if not (os.path.exists(autoencoder_path)
-                and os.path.exists(encoder_path)
-                and os.path.exists(decoder_path)
-                and os.path.exists(history_path)):
-            return cls.DeserializeResult(None, None, None, dict())
-        autoencoder = cls.deserializeModel(autoencoder_path)
-        encoder = cls.deserializeModel(encoder_path)
-        decoder = cls.deserializeModel(decoder_path)
-        history_dct = cls.deserializeHistory(history_path)
-        return cls.DeserializeResult(autoencoder, encoder, decoder, history_dct)
-    
     def plotEncoded(self, x_test: np.ndarray, x_label: np.ndarray,
             max_num_point: int= 100,
             lim: Optional[List[float]] = None,
@@ -431,7 +493,7 @@ class AbstractAutoencoder(object):
             base_path = base_path.replace(char, "")
         base_path = base_path.replace(":", "-")
         base_path = base_path.replace(",", "__")
-        autoencoder.serializeAll(base_path=base_path)
+        autoencoder._serializeAllModels(base_path=base_path)
         autoencoder.plot(x_animals_test,
                 png_path=base_path + ".png",
                 is_plot=False,
@@ -449,3 +511,26 @@ class AbstractAutoencoder(object):
         """
         if self.is_verbose:
             print(f"[{self.__class__.__name__}] {message}")
+
+    def __eq__(self, other: 'AbstractAutoencoder', tolerance: float=1e-8) -> bool:  # type: ignore
+        """
+        Check if two Keras models are identical in architecture and weights.
+        """
+        # Check architecture
+        dd = DeepDiff(self.context_dct(), other.context_dct())
+        if dd:
+            print("Context architectures dictionaries differ:")
+            print(dd)
+            return False
+        # Check weights
+        weights1 = self.autoencoder.get_weights()
+        weights2 = other.autoencoder.get_weights()
+        if len(weights1) != len(weights2):
+            print("Models have different number of weight arrays")
+            return False
+        for idx, (w1, w2) in enumerate(zip(weights1, weights2)):
+            if not np.allclose(w1, w2, atol=tolerance):
+                print(f"Weight array {idx} differs")
+                return False
+        # If we reach this point, the models are equivalent
+        return True

@@ -1,18 +1,19 @@
 '''Autoencoder that uses convolutional layers for autoencoding images. Images are 2D with a channel dimension.'''
 
 from src.abstract_autoencoder import AbstractAutoencoder  # type: ignore
+from src import constants as cn  # type: ignore
 
 import numpy as np
 from tensorflow import keras # type: ignore
 from tensorflow.keras import layers # type: ignore
-from typing import List, Tuple, Union, Any
+from typing import List, Tuple, Union, Any, Optional
 
 
 class ConvolutionalAutoencoder(AbstractAutoencoder):
 
     def __init__(self,
-            image_shape: Union[Tuple[int], List[int]],
-            filter_sizes: List[int] = [32, 64, 128, 32],
+            image_shape: Optional[Union[Tuple[int], List[int]]]=None,
+            filter_sizes: Optional[List[int]] = None,
             base_path: str=cn.MODEL_DIR,
             is_delete_serializations: bool=True,
             activation: str='sigmoid',
@@ -31,18 +32,25 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             is_verbose (bool, optional): Whether to print verbose output during training. Defaults to False.
             dropout_rate (float, optional): Dropout rate to use in the layers. Defaults to 0.4.
         """
+        # Check for null constructor for deserialization
+        if image_shape is None:
+            return
+        # Handle default
+        if filter_sizes is None:
+            filter_sizes = [32, 64, 128, 32]
+        # ConvolutionalAutoencoder specific state
+        self.filter_sizes = filter_sizes
+        # Configure image shape
         if len(image_shape) < 2 or len(image_shape) > 3:
             raise ValueError("image_shape must be of length 2 or 3")
         if len(image_shape) == 2:
             image_shape = [image_shape[0], image_shape[1], 1]
-        self.image_shape = image_shape
         if len(filter_sizes) == 0:
             raise ValueError("filter_sizes must have at least one element")
-        self.filter_sizes = filter_sizes
         self.image_size = np.prod(image_shape)
-        self.dropout_rate = dropout_rate
-        super().__init__(base_path=base_path, is_delete_serializations=is_delete_serializations,
-                activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose)
+        super().__init__(image_shape, base_path=base_path, is_delete_serialization=is_delete_serializations,
+                activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose,
+                dropout_rate=dropout_rate)
 
     def context_dct(self) -> dict:
         # Describes the parameters used to build the model.
@@ -62,11 +70,11 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         """
         history_dct: dict = {}
         input_img = keras.Input(shape=self.image_shape)
-        # Validate the network implied by filter_sizes
+        """ # Validate the network implied by filter_sizes
         reduction_factor = self._calculateSizeReductionFromDownsampling()
         if (self.image_shape[0]*self.image_shape[1]) % reduction_factor != 0:
             raise ValueError(f"Image size {self.image_shape[0]}x{self.image_shape[1]} is not compatible with "
-                    f"the reduction factor {reduction_factor} implied by filter_sizes {self.filter_sizes}")
+                    f"the reduction factor {reduction_factor} implied by filter_sizes {self.filter_sizes}") """
         # Downsampling
         encoded: Any = None
         for idx, filter_size in enumerate(self.filter_sizes):
@@ -138,3 +146,15 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
                 base_path=base_path, is_early_stopping=is_stopping_early,
                 is_verbose=is_verbose)
         cls.runAnimalExperiment(cae, batch_size, cae.context_dct(), num_epoch=num_epoch)
+    
+    def serialize(self, base_path: Optional[str] = None, **kwargs) -> None:
+        """Serializes the model and training history
+
+        Args:
+            base_path (str): Path to save the model.
+        """
+        if len(kwargs) > 0:
+            raise ValueError("DenseAutoencoder.serialize does not accept additional keyword arguments.")
+        super().serialize(base_path=base_path,
+            filter_sizes=self.filter_sizes,
+        )

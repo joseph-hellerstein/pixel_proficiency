@@ -17,8 +17,8 @@ X_ANIMALS_TRAIN, LABEL_ANIMALS_TRAIN, X_ANIMALS_TEST, LABEL_ANIMALS_TEST, CLASS_
 ANIMALS_SHAPE = list(np.shape(X_ANIMALS_TRAIN[0]))
 MNIST_SHAPE = list(np.shape(X_MNIST_TRAIN[0]))
 # Reshape to add channel dimension (28, 28, 1) for CNN
-X_MNIST_TRAIN_FLAT = np.expand_dims(X_MNIST_TRAIN, -1)
-X_MNIST_TEST_FLAT = np.expand_dims(X_MNIST_TEST, -1)
+X_MNIST_TRAIN_EXPANDED = np.expand_dims(X_MNIST_TRAIN, -1)
+X_MNIST_TEST_EXPANDED = np.expand_dims(X_MNIST_TEST, -1)
 NUM_EPOCH = 2
 if IGNORE_TEST:
     VERBOSE = 1
@@ -47,17 +47,17 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.assertTrue(len(self.cae.history_dct) == 0)
 
     def testFitMNIST(self):
-        if IGNORE_TEST or not IS_PLOT:
+        if IGNORE_TEST:
             return
         self.cae.summarize()
-        self.cae.fit(X_MNIST_TRAIN_FLAT, num_epoch=NUM_EPOCH, batch_size=512, validation_data=X_MNIST_TEST_FLAT,
+        self.cae.fit(X_MNIST_TRAIN_EXPANDED, num_epoch=NUM_EPOCH, batch_size=512, validation_data=X_MNIST_TEST_EXPANDED,
                 is_verbose=IGNORE_TEST)
-        self.cae.plot(X_MNIST_TEST_FLAT, is_plot=IS_PLOT)
+        self.cae.plot(X_MNIST_TEST_EXPANDED, is_plot=IS_PLOT)
         self.assertIsNotNone(self.cae.history)
         self.assertIn('loss', self.cae.history.history)
 
     def testFitAnimals(self):
-        if IGNORE_TEST or not IS_PLOT:
+        if IGNORE_TEST:
             return
         cae = ConvolutionalAutoencoder(image_shape=[96, 96, 3],
                 filter_sizes=[256, 128, 64],
@@ -93,9 +93,9 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         cae = ConvolutionalAutoencoder(image_shape=MNIST_SHAPE,
                 filter_sizes=[64, 32, 2],
                 is_delete_serializations=True)
-        cae.fit(X_MNIST_TRAIN_FLAT, num_epoch=NUM_EPOCH, batch_size=128, validation_data=X_MNIST_TEST_FLAT,
+        cae.fit(X_MNIST_TRAIN_EXPANDED, num_epoch=NUM_EPOCH, batch_size=128, validation_data=X_MNIST_TEST_EXPANDED,
                 is_verbose=IGNORE_TEST)
-        cae.plotEncoded(X_MNIST_TEST_FLAT, LABEL_MNIST_TEST, max_num_point=300, lim=[-10, 150],
+        cae.plotEncoded(X_MNIST_TEST_EXPANDED, LABEL_MNIST_TEST, max_num_point=300, lim=[-10, 150],
                 is_plot=IS_PLOT)
 
     def testDoAnimalExperiments(self):
