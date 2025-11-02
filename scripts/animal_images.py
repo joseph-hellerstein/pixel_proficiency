@@ -3,8 +3,12 @@
 from src.dense_autoencoder import DenseAutoencoder  # type: ignore
 from src.convolutional_autoencoder import ConvolutionalAutoencoder  # type: ignore
 
+filter_sizes = [256, 128, 64]
+ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=filter_sizes, batch_size=128, num_epoch=10,
+        is_stopping_early=True, is_verbose=True)
+
 # Dense autoencoders
-if True:
+if False:
     for filter2 in [32, 64]:
         for filter3 in [8, 16]:
                 encode_dims = [96*96*3, 512, 128, filter2, filter3]

@@ -493,11 +493,12 @@ class AbstractAutoencoder(object):
             base_path = base_path.replace(char, "")
         base_path = base_path.replace(":", "-")
         base_path = base_path.replace(",", "__")
-        autoencoder._serializeAllModels(base_path=base_path)
+        autoencoder.serialize(base_path=base_path)
         autoencoder.plot(x_animals_test,
                 png_path=base_path + ".png",
                 is_plot=False,
         )
+        autoencoder.serialize(base_path=base_path)
         return cls.ExperimentResult(batch_size=batch_size,
                 base_path=base_path,
                 history=autoencoder.history_dct,
