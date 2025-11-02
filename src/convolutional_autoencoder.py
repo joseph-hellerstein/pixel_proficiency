@@ -52,16 +52,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
                 activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose,
                 dropout_rate=dropout_rate)
 
-    def context_dct(self) -> dict:
-        # Describes the parameters used to build the model.
-        context_dct = {
-            'image_shape': self.image_shape,
-            'filter_sizes': self.filter_sizes,
-            'activation': self.activation,
-            'dropout_rate': self.dropout_rate,
-        }
-        return context_dct
-
+    #### Internal methods
     def _build(self) -> Tuple[keras.Model, keras.Model, keras.Model, dict]:
         """Builds the convolutional autoencoder model.
 
@@ -108,6 +99,39 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         #
         return autoencoder, encoder, decoder, history_dct
     
+    def _calculateSizeReductionFromDownsampling(self) -> int:
+        reduction_factor = 4**(len(self.filter_sizes) - 1)
+        return reduction_factor
+
+    ###### API
+    
+    @property
+    def compression_factor(self) -> float:
+        # Calculates the ratio between the original image size and the bottleneck size.
+        # The bottleneck is determined by the last filter size and the downsampling factor.
+        reduction_factor = self._calculateSizeReductionFromDownsampling()
+        return float(self.image_size / reduction_factor) * self.filter_sizes[-1]
+    
+    @property
+    def context_dct(self) -> dict:
+        # Describes the parameters used to build the model.
+        context_dct = {
+            'image_shape': self.image_shape,
+            'filter_sizes': self.filter_sizes,
+            'activation': self.activation,
+            'dropout_rate': self.dropout_rate,
+        }
+        return context_dct
+
+    @classmethod 
+    def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
+            num_epoch: int=1000, is_stopping_early: bool = True, is_verbose: bool = True,
+            )-> AbstractAutoencoder.ExperimentResult:
+        cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=True,
+                base_path=base_path, is_early_stopping=is_stopping_early,
+                is_verbose=is_verbose)
+        return cae.runAnimalExperiment(batch_size=batch_size, num_epoch=num_epoch)
+
     def predict(self, image_arr: np.ndarray,
                 predictor_type: str = "autoencoder") -> np.ndarray:
         """Generates reconstructed images from the autoencoder.
@@ -127,26 +151,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
                 raise ValueError(f"Input image shape {image_arr.shape[1:]} != image shape {self.image_shape}")
         reconstructed = super().predict(image_arr, predictor_type=predictor_type)
         return reconstructed
-    
-    def _calculateSizeReductionFromDownsampling(self) -> int:
-        reduction_factor = 4**(len(self.filter_sizes) - 1)
-        return reduction_factor
 
-    @property
-    def compression_factor(self) -> float:
-        # Calculates the ratio between the original image size and the bottleneck size.
-        # The bottleneck is determined by the last filter size and the downsampling factor.
-        reduction_factor = self._calculateSizeReductionFromDownsampling()
-        return float(self.image_size / reduction_factor) * self.filter_sizes[-1]
-
-    @classmethod 
-    def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
-            num_epoch: int=1000, is_stopping_early: bool = True, is_verbose: bool = True) -> None:
-        cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=True,
-                base_path=base_path, is_early_stopping=is_stopping_early,
-                is_verbose=is_verbose)
-        cls.runAnimalExperiment(cae, batch_size, cae.context_dct(), num_epoch=num_epoch)
-    
     def serialize(self, base_path: Optional[str] = None, **kwargs) -> None:
         """Serializes the model and training history
 

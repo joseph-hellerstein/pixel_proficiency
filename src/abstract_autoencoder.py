@@ -23,6 +23,8 @@ DeserializeResult = collections.namedtuple(
         'DeserializeResult', ['autoencoder', 'encoder', 'decoder', 'history_dct'])
 
 class AbstractAutoencoder(object):
+    ExperimentResult = collections.namedtuple('ExperimentResult',
+            ['batch_size', 'history', 'base_path', 'context_str', 'autoencoder'])
 
     def __init__(self,
             image_shape: Union[Tuple[int], List[int]],
@@ -32,6 +34,7 @@ class AbstractAutoencoder(object):
             is_early_stopping: bool = True,
             is_verbose: bool = False,
             dropout_rate: float=0.4,
+            batch_size: int = 128,
             ):
         """Initializes the abstract autoencoder.
         Args:
@@ -40,6 +43,8 @@ class AbstractAutoencoder(object):
             self.activation (str, optional): Activation function to use in the model. Defaults to 'sigmoid'.
             is_early_stopping (bool, optional): Whether to use early stopping during training. Defaults to True.
             is_verbose (bool, optional): Whether to print verbose messages. Defaults to True.
+            dropout_rate (float, optional): Dropout rate to use in the model. Defaults to 0.4.
+            batch_size (int, optional): Batch size to use during training. Defaults to 128.
         """
         # Common state for all autoencoders
         self.image_shape = image_shape
@@ -49,6 +54,7 @@ class AbstractAutoencoder(object):
         self.is_early_stopping = is_early_stopping
         self.is_verbose = is_verbose
         self.dropout_rate = dropout_rate
+        self.batch_size = batch_size
         #
         self.png_pat = os.path.join(base_path, "%s.png") # pattern for naming plots
         self.autoencoder, self.encoder, self.decoder, self.history_dct =  \
@@ -67,7 +73,7 @@ class AbstractAutoencoder(object):
     def compression_factor(self) -> float:
         raise NotImplementedError("Subclasses must implement compression_factor property")
     
-    #property
+    @property
     def context_dct(self) -> dict:
         # Describes the parameters used to build the model.
         raise NotImplementedError("Subclasses must implement context_dct property")
@@ -98,8 +104,8 @@ class AbstractAutoencoder(object):
     def fit(self, 
             x_train: np.ndarray,
             num_epoch: int,
-            batch_size: int,
             validation_data: np.ndarray,
+            batch_size: Optional[int]=None,
             is_verbose: Optional[bool]=None,
             ) -> None:
         """Fits the autoencoder model to the training data. Checkpoint the model.
@@ -112,6 +118,9 @@ class AbstractAutoencoder(object):
             validation_data (np.ndarray): Validation data.
             verbose (int, optional): Verbosity level. Defaults to 1.
         """
+        # Default parameter values
+        if batch_size is None:
+            batch_size = self.batch_size
         if is_verbose is None:
             is_verbose = self.is_verbose
         if is_verbose:
@@ -343,6 +352,31 @@ class AbstractAutoencoder(object):
         decoder = cls._deserializeModel(decoder_path)
         history_dct = cls._deserializeHistory(history_path)
         return DeserializeResult(autoencoder, encoder, decoder, history_dct)
+
+    def makeAnimalBasePath(self, batch_size: Optional[int]=None) -> str:
+        """Creates a base path for animal experiments.
+
+        Args:
+            batch_size (int): The batch size used for training.
+
+        Returns:
+            str: The base path for the animal experiments.
+        """
+        if batch_size is None:
+            batch_size = self.batch_size
+        # Creates a base path for animal experiments.
+        full_context_dct = dict(self.context_dct)
+        full_context_dct['batch_size'] = batch_size
+        full_context_dct['autoencoder'] = str(self.__class__).split('.')[-1][:-2]
+        base_path = os.path.join(self.base_path, "animals_" + str(full_context_dct))
+        # Make base_path a file string
+        for char in "'{}[] ":
+            base_path = base_path.replace(char, "")
+        base_path = base_path.replace(":", "-")
+        base_path = base_path.replace(",", "__")
+        # Make base_path a file string
+        base_path = base_path.replace(" ", "_")
+        return base_path
     
     def serialize(self, base_path: Optional[str] = None, **kwargs) -> None:
         """Serializes the model and training history
@@ -460,50 +494,48 @@ class AbstractAutoencoder(object):
         else:
             plt.close()
 
-    ExperimentResult = collections.namedtuple('ExperimentResult',
-            ['batch_size', 'history', 'base_path', 'context_str'])
-    @classmethod
-    def runAnimalExperiment(cls,
-            autoencoder: 'AbstractAutoencoder',
-            batch_size: int,
-            context_dct: dict,
-            num_epoch: int=MAX_EPOCH,
-            ) -> ExperimentResult:
+    def runAnimalExperiment(self, batch_size: Optional[int]=None, num_epoch: int=MAX_EPOCH,
+            ) -> 'AbstractAutoencoder.ExperimentResult':
         """Run an experiment on the animal dataset.
 
         Args:
-            autoencoder (AbstractAutoencoder): The autoencoder to use.
             batch_size (int): The batch size to use for training.
-            context_dct (dict): Context dictionary describing the experiment.
             num_epoch (int, optional): Number of epochs to train. Defaults to MAX_EPOCH.
 
         Returns:
             ExperimentResult: The result of the experiment.
         """
-        autoencoder.summarize()
+        # Default parameter values
+        if batch_size is None:
+            batch_size = self.batch_size
+        # Summary
+        self.summarize()
         #
-        full_context_dct = dict(context_dct)
+        """ full_context_dct = dict(context_dct)
         full_context_dct['batch_size'] = batch_size
         full_context_dct['autoencoder'] = str(autoencoder.__class__).split('.')[-1][:-2]
-        x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals(is_verbose=autoencoder.is_verbose)
-        autoencoder.fit(x_animals_train, num_epoch=num_epoch, batch_size=batch_size,
-                validation_data=x_animals_test)
-        base_path = os.path.join(autoencoder.base_path, "animals_" + str(full_context_dct))
-        for char in "'{}[] ":
+        base_path = os.path.join(autoencoder.base_path, "animals_" + str(full_context_dct)) """
+        """ for char in "'{}[] ":
             base_path = base_path.replace(char, "")
         base_path = base_path.replace(":", "-")
-        base_path = base_path.replace(",", "__")
-        autoencoder.serialize(base_path=base_path)
-        autoencoder.plot(x_animals_test,
+        base_path = base_path.replace(",", "__") """
+        base_path = self.makeAnimalBasePath(batch_size=batch_size)
+        x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals(is_verbose=self.is_verbose)
+        self.fit(x_animals_train, num_epoch=num_epoch, batch_size=batch_size,
+                validation_data=x_animals_test)
+        self.serialize(base_path=base_path)
+        self.plot(x_animals_test,
                 png_path=base_path + ".png",
                 is_plot=False,
         )
-        autoencoder.serialize(base_path=base_path)
-        return cls.ExperimentResult(batch_size=batch_size,
+        self.serialize(base_path=base_path)
+        return self.ExperimentResult(batch_size=batch_size,
                 base_path=base_path,
-                history=autoencoder.history_dct,
-                context_str=util.dictToStr(autoencoder.context_dct()))
-    
+                history=self.history_dct,
+                context_str=util.dictToStr(self.context_dct),
+                autoencoder=self,
+                )
+
     def print(self, message: str):
         """Prints a message with the class name as prefix.
 
@@ -518,7 +550,7 @@ class AbstractAutoencoder(object):
         Check if two Keras models are identical in architecture and weights.
         """
         # Check architecture
-        dd = DeepDiff(self.context_dct(), other.context_dct())
+        dd = DeepDiff(self.context_dct, other.context_dct)
         if dd:
             print("Context architectures dictionaries differ:")
             print(dd)

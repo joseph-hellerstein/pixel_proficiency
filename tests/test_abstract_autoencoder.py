@@ -46,6 +46,18 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.assertIsNotNone(self.cae.decoder)
         self.assertTrue(len(self.cae.history_dct) == 0)
 
+    def testMakeAnimalBasePath(self):
+        if IGNORE_TEST:
+            return
+        cae = ConvolutionalAutoencoder(image_shape=MNIST_SHAPE,
+                filter_sizes=self.filter_sizes,
+                is_delete_serializations=True)
+        batch_size = cae.batch_size
+        base_path = cae.makeAnimalBasePath(batch_size=batch_size)
+        self.assertIn("animals_", base_path)
+        self.assertIn(str(batch_size), base_path)
+        self.assertIn("ConvolutionalAutoencoder", base_path)
+
     def testFitMNIST(self):
         if IGNORE_TEST:
             return

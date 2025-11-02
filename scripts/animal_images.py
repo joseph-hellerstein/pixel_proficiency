@@ -4,8 +4,10 @@ from src.dense_autoencoder import DenseAutoencoder  # type: ignore
 from src.convolutional_autoencoder import ConvolutionalAutoencoder  # type: ignore
 
 filter_sizes = [256, 128, 64]
-ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=filter_sizes, batch_size=128, num_epoch=10,
+result = ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=filter_sizes, batch_size=128, num_epoch=10,
         is_stopping_early=True, is_verbose=True)
+base_path = result.autoencoder.makeAnimalBasePath()
+cae = ConvolutionalAutoencoder.deserialize(base_path=base_path)
 
 # Dense autoencoders
 if False:

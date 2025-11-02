@@ -49,15 +49,7 @@ class DenseAutoencoder(AbstractAutoencoder):
                 activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose,
                 dropout_rate=dropout_rate)
 
-    def context_dct(self) -> dict:
-        # Describes the parameters used to build the model.
-        context_dct = {
-            'encode_dims': self.encode_dims,
-            'activation': self.activation,
-            'dropout_rate': self.dropout_rate,
-        }
-        return context_dct
-
+    #### Internal methods
     def _build(self) -> Tuple[keras.Model, keras.Model, keras.Model, dict]:
         """Builds the autoencoder, encoder, and decoder models.
 
@@ -102,6 +94,18 @@ class DenseAutoencoder(AbstractAutoencoder):
         # Compile the autoencoder
         autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
         return autoencoder, encoder, decoder, {}
+    
+    ###### API
+    
+    @property
+    def context_dct(self) -> dict:
+        # Describes the parameters used to build the model.
+        context_dct = {
+            'encode_dims': self.encode_dims,
+            'activation': self.activation,
+            'dropout_rate': self.dropout_rate,
+        }
+        return context_dct
 
     @property
     def compression_factor(self) -> float:
@@ -112,10 +116,11 @@ class DenseAutoencoder(AbstractAutoencoder):
     @classmethod
     def doAnimalExperiments(cls, encode_dims: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
             num_epoch: int=MAX_EPOCH, is_verbose: bool = True,
-            is_early_stopping: bool = True) -> None:
+            is_early_stopping: bool = True,
+            ) -> AbstractAutoencoder.ExperimentResult:
         dae = cls(cn.ANIMALS_IMAGE_SHAPE, encode_dims, is_delete_serialization=True,
                 base_path=base_path, is_early_stopping=is_early_stopping, is_verbose=is_verbose)
-        cls.runAnimalExperiment(dae, batch_size, dae.context_dct(), num_epoch=num_epoch)
+        return dae.runAnimalExperiment(batch_size=batch_size, num_epoch=num_epoch)
 
     def serialize(self, base_path: Optional[str] = None, **kwargs) -> None:
         """Serializes the model and training history
