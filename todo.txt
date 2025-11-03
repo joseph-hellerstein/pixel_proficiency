@@ -1,1 +1,1 @@
-1. Save experiment to a directory, not file names.
+1. Save experiment to a zip file, base_path.zip. deserialize uses the zip directly.

@@ -16,7 +16,7 @@ class DenseAutoencoder(AbstractAutoencoder):
     def __init__(self,
             image_shape: Optional[Union[Tuple[int], List[int]]]=None,
             encode_dims: Optional[List[int]]=None,
-            base_path: str=cn.MODEL_DIR,
+            base_path: str=cn.EXPERIMENT_DIR,
             is_delete_serialization: bool=True,
             activation: str='sigmoid',
             is_early_stopping: bool = True,
@@ -114,7 +114,7 @@ class DenseAutoencoder(AbstractAutoencoder):
         return self.encode_dims[0]/ self.encode_dims[-1]
 
     @classmethod
-    def doAnimalExperiments(cls, encode_dims: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
+    def doAnimalExperiments(cls, encode_dims: List[int], batch_size: int, base_path: str=cn.EXPERIMENT_DIR,
             num_epoch: int=MAX_EPOCH, is_verbose: bool = True,
             is_early_stopping: bool = True,
             ) -> AbstractAutoencoder.ExperimentResult:

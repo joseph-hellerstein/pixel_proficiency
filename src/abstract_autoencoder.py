@@ -144,7 +144,7 @@ class AbstractAutoencoder(object):
         if self.is_early_stopping:
             callbacks.extend(
                 [ModelCheckpoint(
-                    os.path.join(cn.MODEL_DIR, 'best_autoencoder.keras'),
+                    os.path.join(cn.EXPERIMENT_DIR, 'best_autoencoder.keras'),
                     monitor='val_loss',
                     save_best_only=True,
                     mode='min',
@@ -175,10 +175,10 @@ class AbstractAutoencoder(object):
         self.history_dct = self.history.history
         # Load the best model after training
         self._serializeAllModels()
-    
-    def summarize(self) -> None:
+
+    def summarize(self, is_verbose: bool=True) -> None:
         # Prints a summary of the autoencoder model.
-        if self.is_verbose:
+        if is_verbose:
             self.autoencoder.summary()
     
     def predict(self, image_arr: np.ndarray,
@@ -251,7 +251,7 @@ class AbstractAutoencoder(object):
         return history_dict
     
     @staticmethod
-    def _makeSerializationPaths(base_path: str, serialize_dir=cn.MODEL_DIR) -> Tuple[str, str, str, str]:
+    def _makeSerializationPaths(base_path: str, serialize_dir=cn.EXPERIMENT_DIR) -> Tuple[str, str, str, str]:
         """Generates paths for model and history serialization.
 
         Args:
@@ -443,6 +443,21 @@ class AbstractAutoencoder(object):
             plt.show()
         else:
             plt.close()
+
+    def plotLoss(self) -> None:
+        """Plots the training and validation loss over epochs.
+        """
+        if self.history_dct is None or 'loss' not in self.history_dct:
+            raise ValueError("No training history available to plot.")
+        plt.figure(figsize=(8, 6))
+        plt.plot(self.history_dct['loss'], label='Training Loss')
+        plt.plot(self.history_dct['val_loss'], label='Validation Loss')
+        plt.title('Training and Validation Loss over Epochs')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True)
+        plt.show()  
 
     def plotEncoded(self, x_test: np.ndarray, x_label: np.ndarray,
             max_num_point: int= 100,

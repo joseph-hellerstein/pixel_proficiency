@@ -14,7 +14,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
     def __init__(self,
             image_shape: Optional[Union[Tuple[int], List[int]]]=None,
             filter_sizes: Optional[List[int]] = None,
-            base_path: str=cn.MODEL_DIR,
+            base_path: str=cn.EXPERIMENT_DIR,
             is_delete_serializations: bool=True,
             activation: str='sigmoid',
             is_early_stopping: bool = True,
@@ -124,7 +124,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         return context_dct
 
     @classmethod 
-    def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.MODEL_DIR,
+    def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.EXPERIMENT_DIR,
             num_epoch: int=1000, is_stopping_early: bool = True, is_verbose: bool = True,
             )-> AbstractAutoencoder.ExperimentResult:
         cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=True,

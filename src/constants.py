@@ -6,7 +6,7 @@ NUM_TEST = 10000
 # Paths
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_DIR = os.path.join(PROJECT_DIR, "tests")
-MODEL_DIR = os.path.join(PROJECT_DIR, "models")
+EXPERIMENT_DIR = os.path.join(PROJECT_DIR, "experiments")
 DATA_DIR = os.path.join(PROJECT_DIR, "data")
 TEST = os.path.join(DATA_DIR, "data")
 MNIST_TRAIN_PATH = os.path.join(DATA_DIR, "mnist_train.pkl")

@@ -15,9 +15,9 @@ import json
 import src.constants as cn  # type: ignore
 import src.util as util  # type: ignore
 
-AUTOENCODER_PATH = os.path.join(cn.MODEL_DIR, "convolutional_autoencoder.keras")
-ENCODER_PATH = os.path.join(cn.MODEL_DIR, "convolutional_encoder.keras")
-HISTORY_PATH = os.path.join(cn.MODEL_DIR, "convolutional_history.json")
+AUTOENCODER_PATH = os.path.join(cn.EXPERIMENT_DIR, "convolutional_autoencoder.keras")
+ENCODER_PATH = os.path.join(cn.EXPERIMENT_DIR, "convolutional_encoder.keras")
+HISTORY_PATH = os.path.join(cn.EXPERIMENT_DIR, "convolutional_history.json")
 
 def recoverData(prefix: str) -> np.ndarray:
     num_row = cn.NUM_TRAIN if prefix == 'train' else cn.NUM_TEST

@@ -20,7 +20,7 @@ if False:
 if False:
     # Deserialize and plot
     base_path = "animals_image_shape-96__96__3__filter_sizes-256__128__64__activation-sigmoid__dropout_rate-0.4__batch_size-128__autoencoder-ConvolutionalAutoencoder"
-    base_path = os.path.join(cn.MODEL_DIR, base_path)
+    base_path = os.path.join(cn.EXPERIMENT_DIR, base_path)
     cae = ConvolutionalAutoencoder.deserialize(base_path=base_path)
     x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals()
     cae.plot(x_animals_test, is_plot=True)
