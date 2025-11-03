@@ -215,52 +215,6 @@ class AbstractAutoencoder(object):
         #
         return predicted_arr
 
-    def plot(self, x_original_arr: np.ndarray,
-            x_predicted_arr: Optional[np.ndarray]=None,
-            png_path: Optional[str]=None,
-            is_plot:bool = True) -> None:
-        """Plots the training history and the reconstructed images.
-
-        Args:
-            x_original_arr (np.ndarray): array of test images
-            x_predicted_arr (np.ndarray, optional): array of predicted images.
-                                                    If None, predictions are generated from x_original_arr.
-                                                    Defaults to None.
-            png_path (str, optional): Path to save the plot. If None, the plot is not saved. Defaults to None.
-        """
-        # Generate predictions
-        if x_predicted_arr is None:
-            x_predicted_arr = self.predict(x_original_arr)
-        else:
-            x_predicted_arr = x_predicted_arr.copy()
-        x_predicted_arr = x_predicted_arr.astype('uint8')
-        # Visualize results
-        fig, axes = plt.subplots(2, 10, figsize=(20, 4))
-        for i in range(10):
-            # Original images
-            ax = axes[0, i]
-            ax.imshow(x_original_arr[i], cmap='gray')
-            ax.set_title("Original")
-            plt.axis('off')
-            # Reconstructed images
-            ax = axes[1, i]
-            ax.imshow(x_predicted_arr[i], cmap='gray')
-            ax.set_title("Reconstructed")
-            plt.axis('off')
-        plt.tight_layout()
-        if png_path is not None:
-            fig.savefig(png_path, dpi=300, bbox_inches="tight")
-        if is_plot:
-            plt.show()
-        else:
-            plt.close()
-
-        # Print compression statistics
-        """ print(f"\nOriginal image size: 784 pixels")
-        print(f"Encoded representation size: {encoding_dim} values")
-        print(f"Compression ratio: {784/encoding_dim:.1f}:1")
-        print(f"Final training loss: {history.history['loss'][-1]:.4f}")
-        print(f"Final validation loss: {history.history['val_loss'][-1]:.4f}") """
 
     @staticmethod
     def _serializeModel(path: str, model: keras.Model) -> None:
@@ -449,6 +403,46 @@ class AbstractAutoencoder(object):
             np.ndarray: denormalized array of images
         """
         return (image_arr * 255.0).astype(np.uint8)
+    
+    def plot(self, x_original_arr: np.ndarray,
+            x_predicted_arr: Optional[np.ndarray]=None,
+            png_path: Optional[str]=None,
+            is_plot:bool = True) -> None:
+        """Plots reconstructed images.
+
+        Args:
+            x_original_arr (np.ndarray): array of test images
+            x_predicted_arr (np.ndarray, optional): array of predicted images.
+                                                    If None, predictions are generated from x_original_arr.
+                                                    Defaults to None.
+            png_path (str, optional): Path to save the plot. If None, the plot is not saved. Defaults to None.
+        """
+        # Generate predictions
+        if x_predicted_arr is None:
+            x_predicted_arr = self.predict(x_original_arr)
+        else:
+            x_predicted_arr = x_predicted_arr.copy()
+        x_predicted_arr = x_predicted_arr.astype('uint8')
+        # Visualize results
+        fig, axes = plt.subplots(2, 10, figsize=(20, 4))
+        for i in range(10):
+            # Original images
+            ax = axes[0, i]
+            ax.imshow(x_original_arr[i], cmap='gray')
+            ax.set_title("Original")
+            plt.axis('off')
+            # Reconstructed images
+            ax = axes[1, i]
+            ax.imshow(x_predicted_arr[i], cmap='gray')
+            ax.set_title("Reconstructed")
+            plt.axis('off')
+        plt.tight_layout()
+        if png_path is not None:
+            fig.savefig(png_path, dpi=300, bbox_inches="tight")
+        if is_plot:
+            plt.show()
+        else:
+            plt.close()
 
     def plotEncoded(self, x_test: np.ndarray, x_label: np.ndarray,
             max_num_point: int= 100,

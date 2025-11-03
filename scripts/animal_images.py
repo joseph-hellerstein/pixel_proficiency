@@ -2,12 +2,28 @@
 
 from src.dense_autoencoder import DenseAutoencoder  # type: ignore
 from src.convolutional_autoencoder import ConvolutionalAutoencoder  # type: ignore
+import src.util as util  # type: ignore
+import src.constants as cn # type: ignore
 
-filter_sizes = [256, 128, 64]
-result = ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=filter_sizes, batch_size=128, num_epoch=10,
-        is_stopping_early=True, is_verbose=True)
-base_path = result.autoencoder.makeAnimalBasePath()
-cae = ConvolutionalAutoencoder.deserialize(base_path=base_path)
+import os
+
+if False:
+    # Example run for dense autoencoder
+    encode_dims = [96*96*3, 512, 128, 64, 16]
+    result = DenseAutoencoder.doAnimalExperiments(encode_dims=encode_dims, batch_size=128,
+            is_early_stopping=True,
+            is_verbose=True)
+    base_path = result.autoencoder.makeAnimalBasePath()
+    dae = DenseAutoencoder.deserialize(base_path=base_path)
+    x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals()
+    dae.plot(x_animals_test, png_path=base_path + "new.png", is_plot=False)
+if False:
+    # Deserialize and plot
+    base_path = "animals_image_shape-96__96__3__filter_sizes-256__128__64__activation-sigmoid__dropout_rate-0.4__batch_size-128__autoencoder-ConvolutionalAutoencoder"
+    base_path = os.path.join(cn.MODEL_DIR, base_path)
+    cae = ConvolutionalAutoencoder.deserialize(base_path=base_path)
+    x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals()
+    cae.plot(x_animals_test, is_plot=True)
 
 # Dense autoencoders
 if False:
