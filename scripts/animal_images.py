@@ -1,5 +1,6 @@
 '''Considers different parameterizations for animal images.'''
 
+from notebooks.pixel_proficiency.tests.test_abstract_autoencoder import X_MNIST_TEST
 from src.dense_autoencoder import DenseAutoencoder  # type: ignore
 from src.convolutional_autoencoder import ConvolutionalAutoencoder  # type: ignore
 import src.util as util  # type: ignore
@@ -7,16 +8,16 @@ import src.constants as cn # type: ignore
 
 import os
 
-if False:
+if True:
+    X_MNIST_TRAIN, LABEL_MNIST_TRAIN, X_MNIST_TEST, LABEL_MNIST_TEST, MNIST_CLASS_NAMES = util.getPklMNIST()
     # Example run for dense autoencoder
-    encode_dims = [96*96*3, 512, 128, 64, 16]
-    result = DenseAutoencoder.doAnimalExperiments(encode_dims=encode_dims, batch_size=128,
-            is_early_stopping=True,
-            is_verbose=True)
-    base_path = result.autoencoder.makeAnimalBasePath()
-    dae = DenseAutoencoder.deserialize(base_path=base_path)
-    x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals()
-    dae.plot(x_animals_test, png_path=base_path + "new.png", is_plot=False)
+    encode_dims = [784, 128, 64, 16]
+    image_shape = [28, 28]
+    dae = DenseAutoencoder(image_shape, encode_dims, is_delete_serialization=True, is_verbose=True,
+                is_early_stopping=False)
+    dae.fit(X_MNIST_TRAIN, num_epoch=1000, batch_size=128, validation_data=X_MNIST_TEST)
+    dae.summarize()
+    dae.plot(X_MNIST_TEST)
 if False:
     # Deserialize and plot
     base_path = "animals_image_shape-96__96__3__filter_sizes-256__128__64__activation-sigmoid__dropout_rate-0.4__batch_size-128__autoencoder-ConvolutionalAutoencoder"

@@ -1,0 +1,1 @@
+{"image_shape": [96, 96, 3], "base_path": ".", "is_delete_serialization": true, "activation": "sigmoid", "is_early_stopping": true, "is_verbose": false, "dropout_rate": 0.4, "png_pat": "./%s.png", "is_fit": false, "filter_sizes": [256, 128, 64]}
