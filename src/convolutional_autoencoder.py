@@ -126,11 +126,25 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
     @classmethod 
     def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.EXPERIMENT_DIR,
             num_epoch: int=1000, is_stopping_early: bool = True, is_verbose: bool = True,
-            )-> AbstractAutoencoder.ExperimentResult:
+            is_test: bool = False) -> AbstractAutoencoder.ExperimentResult:
+        """Run experiments using the Animals data
+
+        Args:
+            filter_sizes (List[int]): List of filter sizes for the convolutional layers.
+            batch_size (int): Batch size for training.
+            base_path (str, optional): Base path for model serialization. Defaults to cn.EXPERIMENT_DIR.
+            num_epoch (int, optional): Number of epochs for training. Defaults to 1000.
+            is_stopping_early (bool, optional): Whether to use early stopping. Defaults to True.
+            is_verbose (bool, optional): Whether to print verbose messages. Defaults to True.
+            is_test (bool, optional): Whether this is a test run. Defaults to False.
+
+        Returns:
+            AbstractAutoencoder.ExperimentResult
+        """
         cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serialization=True,
                 base_path=base_path, is_early_stopping=is_stopping_early,
                 is_verbose=is_verbose)
-        return cae.runAnimalExperiment(batch_size=batch_size, num_epoch=num_epoch)
+        return cae.runAnimalExperiment(batch_size=batch_size, num_epoch=num_epoch, is_test=is_test)
 
     def predict(self, image_arr: np.ndarray,
                 predictor_type: str = "autoencoder") -> np.ndarray:

@@ -307,8 +307,10 @@ class AbstractAutoencoder(object):
         history_dct = cls._deserializeHistory(history_path)
         return DeserializeResult(autoencoder, encoder, decoder, history_dct)
 
-    def makeBasePath(self, batch_size: Optional[int]=None, data_name:str = "animals") -> str:
-        """Creates a base path for animal experiments.
+    def makeBasePath(self, batch_size: Optional[int]=None, data_name:str = "animals", is_test: bool = False) -> str:
+        """Creates a base path for animal experiments. These can be
+            animals vs. mnist
+            dense vs. convolutional
 
         Args:
             batch_size (int): The batch size used for training.
@@ -316,13 +318,23 @@ class AbstractAutoencoder(object):
         Returns:
             str: The base path for the animal experiments.
         """
+        # Create the subdirectory name
+        if "ConvolutionalAutoencoder" in str(self.__class__):
+            autoencoder_name = "convolutional"
+        else:
+            autoencoder_name = "dense"
+        subdirectory = f"{data_name}_{autoencoder_name}"
+
         if batch_size is None:
             batch_size = self.batch_size
-        # Creates a base path for animal experiments.
+        # Creates a base path for experiments.
         full_context_dct = dict(self.context_dct)
         full_context_dct['batch_size'] = batch_size
         full_context_dct['autoencoder'] = str(self.__class__).split('.')[-1][:-2]
-        base_path = os.path.join(self.base_path, data_name + "_" + str(full_context_dct))
+        if is_test:
+            base_path = os.path.join(self.base_path, data_name + "_" + str(full_context_dct))
+        else:
+            base_path = os.path.join(self.base_path, subdirectory, data_name + "_" + str(full_context_dct))
         # Make base_path a file string
         for char in "'{}[] ":
             base_path = base_path.replace(char, "")
@@ -504,12 +516,13 @@ class AbstractAutoencoder(object):
             plt.close()
 
     def runAnimalExperiment(self, batch_size: Optional[int]=None, num_epoch: int=MAX_EPOCH,
-            ) -> 'AbstractAutoencoder.ExperimentResult':
+            is_test:bool=False) -> 'AbstractAutoencoder.ExperimentResult':
         """Run an experiment on the animal dataset.
 
         Args:
             batch_size (int): The batch size to use for training.
             num_epoch (int, optional): Number of epochs to train. Defaults to MAX_EPOCH.
+            is_test (bool, optional): Whether to run the experiment in test mode. Defaults to False.
 
         Returns:
             ExperimentResult: The result of the experiment.
@@ -520,7 +533,7 @@ class AbstractAutoencoder(object):
         # Summary
         self.summarize()
         #
-        base_path = self.makeBasePath(batch_size=batch_size)
+        base_path = self.makeBasePath(batch_size=batch_size, data_name="animals", is_test=is_test)
         x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals(is_verbose=self.is_verbose)
         self.fit(x_animals_train, num_epoch=num_epoch, batch_size=batch_size,
                 validation_data=x_animals_test)

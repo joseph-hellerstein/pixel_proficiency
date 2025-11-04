@@ -1,1 +1,0 @@
-{"image_shape": [28, 28], "base_path": "/Users/jlheller/repos/pixel_proficiency/experiments", "is_delete_serialization": true, "activation": "sigmoid", "is_early_stopping": false, "is_verbose": true, "dropout_rate": 0.4, "png_pat": "/Users/jlheller/repos/pixel_proficiency/experiments/%s.png", "is_fit": false, "encode_dims": [784, 128, 64, 16]}

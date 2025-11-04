@@ -67,7 +67,8 @@ class TestDeterministicAutoencoder(unittest.TestCase):
         if IGNORE_TEST:
             return
         DenseAutoencoder.doAnimalExperiments(encode_dims=[96*96*3, 512, 128, 64], batch_size=128,
-                num_epoch=NUM_EPOCH, base_path=cn.TEST_DIR, is_early_stopping=True, is_verbose=IGNORE_TEST)
+                num_epoch=NUM_EPOCH, base_path=cn.TEST_DIR, is_early_stopping=True, is_verbose=IGNORE_TEST,
+                is_test=True)
 
 if __name__ == '__main__':
     unittest.main()

@@ -54,7 +54,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
                 is_delete_serialization=True)
         batch_size = cae.batch_size
         base_path = cae.makeBasePath(batch_size=batch_size)
-        self.assertIn("animals_", base_path)
+        self.assertIn("animals_convolutional/", base_path)
         self.assertIn(str(batch_size), base_path)
         self.assertIn("ConvolutionalAutoencoder", base_path)
 
@@ -115,7 +115,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         filter_sizes = [64, 32, 8]
         ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=filter_sizes, batch_size=128,
-                base_path=cn.TEST_DIR, num_epoch=NUM_EPOCH)
+                base_path=cn.TEST_DIR, num_epoch=NUM_EPOCH, is_test=True)
         ffiles = os.listdir(cn.TEST_DIR)
         true = any(["animals_" in f for f in ffiles])
         self.assertTrue(true)

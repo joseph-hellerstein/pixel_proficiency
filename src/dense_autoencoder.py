@@ -117,10 +117,24 @@ class DenseAutoencoder(AbstractAutoencoder):
     def doAnimalExperiments(cls, encode_dims: List[int], batch_size: int, base_path: str=cn.EXPERIMENT_DIR,
             num_epoch: int=MAX_EPOCH, is_verbose: bool = True,
             is_early_stopping: bool = True,
-            ) -> AbstractAutoencoder.ExperimentResult:
+            is_test: bool = False) -> AbstractAutoencoder.ExperimentResult:
+        """Run experiments using the Animals data
+
+        Args:
+            encode_dims (List[int]): List of encoding dimensions for the dense layers.
+            batch_size (int): Batch size for training.
+            base_path (str, optional): Base path for model serialization. Defaults to cn.EXPERIMENT_DIR.
+            num_epoch (int, optional): Number of epochs for training. Defaults to MAX_EPOCH.
+            is_verbose (bool, optional): Whether to print verbose messages. Defaults to True.
+            is_early_stopping (bool, optional): Whether to use early stopping. Defaults to True.
+            is_test (bool, optional): Whether this is a test run. Defaults to False.
+
+        Returns:
+            AbstractAutoencoder.ExperimentResult: The result of the experiment.
+        """
         dae = cls(cn.ANIMALS_IMAGE_SHAPE, encode_dims, is_delete_serialization=True,
                 base_path=base_path, is_early_stopping=is_early_stopping, is_verbose=is_verbose)
-        return dae.runAnimalExperiment(batch_size=batch_size, num_epoch=num_epoch)
+        return dae.runAnimalExperiment(batch_size=batch_size, num_epoch=num_epoch, is_test=is_test)
 
     def serialize(self, base_path: Optional[str] = None, **kwargs) -> None:
         """Serializes the model and training history
