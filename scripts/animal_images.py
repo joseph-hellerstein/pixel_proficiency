@@ -17,6 +17,9 @@ if False:
     dae.fit(X_MNIST_TRAIN, num_epoch=1000, batch_size=128, validation_data=X_MNIST_TEST)
     dae.summarize()
     dae.plot(X_MNIST_TEST)
+    base_path = dae.makeAnimalBasePath(batch_size=128)
+    base_path = os.path.join(cn.EXPERIMENT_DIR, base_path)
+    dae.serialize(base_path=base_path)
 if True:
     X_MNIST_TRAIN, LABEL_MNIST_TRAIN, X_MNIST_TEST, LABEL_MNIST_TEST, MNIST_CLASS_NAMES = util.getPklMNIST()
     # Example run for dense autoencoder
@@ -27,6 +30,9 @@ if True:
     cae.fit(X_MNIST_TRAIN, num_epoch=1000, batch_size=128, validation_data=X_MNIST_TEST)
     cae.summarize()
     cae.plot(X_MNIST_TEST)
+    base_path = cae.makeAnimalBasePath(batch_size=128)
+    base_path = os.path.join(cn.EXPERIMENT_DIR, base_path)
+    cae.serialize(base_path=base_path)
 if False:
     # Deserialize and plot
     base_path = "animals_image_shape-96__96__3__filter_sizes-256__128__64__activation-sigmoid__dropout_rate-0.4__batch_size-128__autoencoder-ConvolutionalAutoencoder"
