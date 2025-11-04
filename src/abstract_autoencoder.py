@@ -307,7 +307,7 @@ class AbstractAutoencoder(object):
         history_dct = cls._deserializeHistory(history_path)
         return DeserializeResult(autoencoder, encoder, decoder, history_dct)
 
-    def makeAnimalBasePath(self, batch_size: Optional[int]=None) -> str:
+    def makeBasePath(self, batch_size: Optional[int]=None, data_name:str = "animals") -> str:
         """Creates a base path for animal experiments.
 
         Args:
@@ -322,7 +322,7 @@ class AbstractAutoencoder(object):
         full_context_dct = dict(self.context_dct)
         full_context_dct['batch_size'] = batch_size
         full_context_dct['autoencoder'] = str(self.__class__).split('.')[-1][:-2]
-        base_path = os.path.join(self.base_path, "animals_" + str(full_context_dct))
+        base_path = os.path.join(self.base_path, data_name + "_" + str(full_context_dct))
         # Make base_path a file string
         for char in "'{}[] ":
             base_path = base_path.replace(char, "")
@@ -520,15 +520,7 @@ class AbstractAutoencoder(object):
         # Summary
         self.summarize()
         #
-        """ full_context_dct = dict(context_dct)
-        full_context_dct['batch_size'] = batch_size
-        full_context_dct['autoencoder'] = str(autoencoder.__class__).split('.')[-1][:-2]
-        base_path = os.path.join(autoencoder.base_path, "animals_" + str(full_context_dct)) """
-        """ for char in "'{}[] ":
-            base_path = base_path.replace(char, "")
-        base_path = base_path.replace(":", "-")
-        base_path = base_path.replace(",", "__") """
-        base_path = self.makeAnimalBasePath(batch_size=batch_size)
+        base_path = self.makeBasePath(batch_size=batch_size)
         x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals(is_verbose=self.is_verbose)
         self.fit(x_animals_train, num_epoch=num_epoch, batch_size=batch_size,
                 validation_data=x_animals_test)

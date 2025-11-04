@@ -30,7 +30,7 @@ if True:
     cae.fit(X_MNIST_TRAIN, num_epoch=1000, batch_size=128, validation_data=X_MNIST_TEST)
     cae.summarize()
     cae.plot(X_MNIST_TEST)
-    base_path = cae.makeAnimalBasePath(batch_size=128)
+    base_path = cae.makeBasePath(batch_size=128, data_name="mnist")
     base_path = os.path.join(cn.EXPERIMENT_DIR, base_path)
     cae.serialize(base_path=base_path)
 if False:
