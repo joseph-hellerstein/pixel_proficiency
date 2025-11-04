@@ -1,4 +1,4 @@
-'''Considers different parameterizations for animal images.'''
+'''Considers different parameterizations for image models.'''
 
 from src.dense_autoencoder import DenseAutoencoder  # type: ignore
 from src.convolutional_autoencoder import ConvolutionalAutoencoder  # type: ignore
@@ -7,7 +7,7 @@ import src.constants as cn # type: ignore
 
 import os
 
-if False:
+if True:
     X_MNIST_TRAIN, LABEL_MNIST_TRAIN, X_MNIST_TEST, LABEL_MNIST_TEST, MNIST_CLASS_NAMES = util.getPklMNIST()
     # Example run for dense autoencoder
     encode_dims = [784, 128, 64, 16]
@@ -17,7 +17,7 @@ if False:
     dae.fit(X_MNIST_TRAIN, num_epoch=1000, batch_size=128, validation_data=X_MNIST_TEST)
     dae.summarize()
     dae.plot(X_MNIST_TEST)
-    base_path = dae.makeAnimalBasePath(batch_size=128)
+    base_path = dae.makeBasePath(batch_size=128, data_name="mnist")
     base_path = os.path.join(cn.EXPERIMENT_DIR, base_path)
     dae.serialize(base_path=base_path)
 if False:
@@ -40,7 +40,7 @@ if False:
     cae = ConvolutionalAutoencoder.deserialize(base_path=base_path)
     x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals()
     cae.plot(x_animals_test, is_plot=True)
-if True:
+if False:
     encode_dims = [96*96*3, 512, 128, 16]
     DenseAutoencoder.doAnimalExperiments(encode_dims=encode_dims, batch_size=128, is_early_stopping=False,
             is_verbose=True)
