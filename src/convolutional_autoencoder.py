@@ -15,7 +15,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
             image_shape: Optional[Union[Tuple[int], List[int]]]=None,
             filter_sizes: Optional[List[int]] = None,
             base_path: str=cn.EXPERIMENT_DIR,
-            is_delete_serializations: bool=True,
+            is_delete_serialization: bool=True,
             activation: str='sigmoid',
             is_early_stopping: bool = True,
             is_verbose: bool = False,
@@ -48,7 +48,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
         if len(filter_sizes) == 0:
             raise ValueError("filter_sizes must have at least one element")
         self.image_size = np.prod(image_shape)
-        super().__init__(image_shape, base_path=base_path, is_delete_serialization=is_delete_serializations,
+        super().__init__(image_shape, base_path=base_path, is_delete_serialization=is_delete_serialization,
                 activation=activation, is_early_stopping=is_early_stopping, is_verbose=is_verbose,
                 dropout_rate=dropout_rate)
 
@@ -127,7 +127,7 @@ class ConvolutionalAutoencoder(AbstractAutoencoder):
     def doAnimalExperiments(cls, filter_sizes: List[int], batch_size: int, base_path: str=cn.EXPERIMENT_DIR,
             num_epoch: int=1000, is_stopping_early: bool = True, is_verbose: bool = True,
             )-> AbstractAutoencoder.ExperimentResult:
-        cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serializations=True,
+        cae = cls(cn.ANIMALS_IMAGE_SHAPE, filter_sizes, is_delete_serialization=True,
                 base_path=base_path, is_early_stopping=is_stopping_early,
                 is_verbose=is_verbose)
         return cae.runAnimalExperiment(batch_size=batch_size, num_epoch=num_epoch)

@@ -35,7 +35,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.filter_sizes = FILTER_SIZES
         self.cae = ConvolutionalAutoencoder(image_shape=MNIST_SHAPE,
                 filter_sizes=self.filter_sizes,
-                is_delete_serializations=True)
+                is_delete_serialization=True)
 
     def testConstructor(self):
         if IGNORE_TEST:
@@ -51,7 +51,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         cae = ConvolutionalAutoencoder(image_shape=MNIST_SHAPE,
                 filter_sizes=self.filter_sizes,
-                is_delete_serializations=True)
+                is_delete_serialization=True)
         batch_size = cae.batch_size
         base_path = cae.makeAnimalBasePath(batch_size=batch_size)
         self.assertIn("animals_", base_path)
@@ -73,7 +73,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         cae = ConvolutionalAutoencoder(image_shape=[96, 96, 3],
                 filter_sizes=[256, 128, 64],
-                is_delete_serializations=True)
+                is_delete_serialization=True)
         cae.summarize()
         cae.fit(X_ANIMALS_TRAIN, num_epoch=10, batch_size=128, validation_data=X_ANIMALS_TEST,
                 is_verbose=IGNORE_TEST)
@@ -87,7 +87,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         cae = ConvolutionalAutoencoder(image_shape=ANIMALS_SHAPE,
                 filter_sizes=FILTER_SIZES,
-                is_delete_serializations=True)
+                is_delete_serialization=True)
         cae.summarize()
         cae.fit(X_ANIMALS_TRAIN, num_epoch=NUM_EPOCH, batch_size=128, validation_data=X_ANIMALS_TEST,
                 is_verbose=IGNORE_TEST)
@@ -104,7 +104,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         cae = ConvolutionalAutoencoder(image_shape=MNIST_SHAPE,
                 filter_sizes=[64, 32, 2],
-                is_delete_serializations=True)
+                is_delete_serialization=True)
         cae.fit(X_MNIST_TRAIN_EXPANDED, num_epoch=NUM_EPOCH, batch_size=128, validation_data=X_MNIST_TEST_EXPANDED,
                 is_verbose=IGNORE_TEST)
         cae.plotEncoded(X_MNIST_TEST_EXPANDED, LABEL_MNIST_TEST, max_num_point=300, lim=[-10, 150],

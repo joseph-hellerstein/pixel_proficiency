@@ -32,7 +32,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         self.filter_sizes = FILTER_SIZES
         self.cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 filter_sizes=self.filter_sizes,
-                is_delete_serializations=True)
+                is_delete_serialization=True)
 
     def testConstructor(self):
         if IGNORE_TEST:
@@ -56,7 +56,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         # Evaluate serialization
         cae2 = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 filter_sizes=[64, 32, 8],
-                is_delete_serializations=True)
+                is_delete_serialization=True)
         cae2.plot(X_MNIST_TEST, is_plot=IS_PLOT)
         self.assertIsNotNone(cae2.autoencoder)
         self.assertIsNotNone(cae2.encoder)
@@ -70,7 +70,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
                 #filter_sizes=[64, 32, 8],
                 #filter_sizes=[32, 128, 256, 16],
                 filter_sizes=[256, 128, 64],
-                is_delete_serializations=True)
+                is_delete_serialization=True)
         cae.summarize()
         cae.fit(X_ANIMALS_TRAIN, num_epoch=NUM_EPOCH, batch_size=128, validation_data=X_ANIMALS_TEST,
                 is_verbose=IGNORE_TEST)
@@ -83,7 +83,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 filter_sizes=FILTER_SIZES,
-                is_delete_serializations=True)
+                is_delete_serialization=True)
         prediction_arr = cae.predict(X_MNIST_TEST, predictor_type="encoder")
         x_test = cae.predict(prediction_arr, predictor_type="decoder")
         cae.plot(x_original_arr=X_MNIST_TEST, x_predicted_arr=x_test, is_plot=IS_PLOT)
@@ -93,7 +93,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 filter_sizes=FILTER_SIZES,
-                is_delete_serializations=True)
+                is_delete_serialization=True)
         autoencoder_prediction = cae.predict(X_MNIST_TEST, predictor_type="autoencoder")
         encoder_prediction = cae.predict(X_MNIST_TEST, predictor_type="encoder")
         decoder_prediction = cae.predict(encoder_prediction, predictor_type="decoder")
@@ -105,7 +105,7 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
             return
         cae = ConvolutionalAutoencoder(image_shape=IMAGE_SHAPE,
                 filter_sizes=FILTER_SIZES,
-                is_delete_serializations=True)
+                is_delete_serialization=True)
         cae.plotEncoded(X_MNIST_TEST, LABEL_MNIST_TEST, max_num_point=300, lim=[-10, 500], is_plot=IS_PLOT)
 
     def testDoAnimalExperiments(self):
