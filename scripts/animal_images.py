@@ -20,7 +20,7 @@ if False:
     base_path = dae.makeAnimalBasePath(batch_size=128)
     base_path = os.path.join(cn.EXPERIMENT_DIR, base_path)
     dae.serialize(base_path=base_path)
-if True:
+if False:
     X_MNIST_TRAIN, LABEL_MNIST_TRAIN, X_MNIST_TEST, LABEL_MNIST_TEST, MNIST_CLASS_NAMES = util.getPklMNIST()
     # Example run for dense autoencoder
     filter_sizes = [128, 64, 16]
@@ -40,6 +40,10 @@ if False:
     cae = ConvolutionalAutoencoder.deserialize(base_path=base_path)
     x_animals_train, _, x_animals_test, __, ___ = util.getPklAnimals()
     cae.plot(x_animals_test, is_plot=True)
+if True:
+    encode_dims = [96*96*3, 512, 128, 16]
+    DenseAutoencoder.doAnimalExperiments(encode_dims=encode_dims, batch_size=128, is_early_stopping=False,
+            is_verbose=True)
 
 # Dense autoencoders
 if False:
