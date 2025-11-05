@@ -140,11 +140,5 @@ class TestConvolutionalAutoencoder(unittest.TestCase):
         cae.plot(X_MNIST_TEST, is_plot=IS_PLOT)
         self.assertIsNotNone(cae.history_dct)
 
-    def testBug(self):
-        if IGNORE_TEST:
-            return
-        ConvolutionalAutoencoder.doAnimalExperiments(filter_sizes=[64, 32, 8], batch_size=128,
-                base_path=cn.TEST_DIR, num_epoch=NUM_EPOCH)
-
 if __name__ == '__main__':
     unittest.main()
