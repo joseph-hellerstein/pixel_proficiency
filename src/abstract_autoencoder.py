@@ -581,3 +581,24 @@ class AbstractAutoencoder(object):
                 return False
         # If we reach this point, the models are equivalent
         return True
+    
+    def loadModelFromZip(self, zip_path: str, model_filename: str = "best_autoencoder.keras") -> keras.Model:
+        """Loads a Keras model from a zip archive.
+
+        Args:
+            zip_path (str): Path to the zip archive containing the model.
+            model_filename (str, optional): Filename of the model inside the zip. Defaults to "best_autoencoder.keras".
+
+        Returns:
+            keras.Model: The loaded Keras model.
+        """
+        import zipfile
+        import io
+
+        with zipfile.ZipFile(zip_path, 'r') as z:
+            with z.open(model_filename) as f:
+                file_content = f.read()
+                model_bytes = io.BytesIO(file_content)
+                model = load_model(model_bytes, compile=False)
+                model.compile(optimizer='adam', loss='mse')
+        return model
